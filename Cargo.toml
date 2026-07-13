@@ -1,0 +1,36 @@
+[package]
+name = "adapt-e2e-core"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.85"
+license = "Apache-2.0"
+description = "Standalone deterministic Double-Ratchet library (pure Rust, C-ABI) over a seed-injected vodozemac fork."
+repository = "https://github.com/adapt-toolkit/adapt-e2e-core"
+publish = false
+
+[lib]
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[features]
+default = ["std"]
+# `std` is feature-gated and default-on for native convenience only. The
+# `no_std` build (`--no-default-features`) is a first-class CI target (SPEC §9);
+# note the vendored vodozemac fork is not yet `no_std` (tracked for milestone M4).
+std = []
+
+[dependencies]
+# Vendored, pinned fork of vodozemac carrying the additive `*_with_rng`
+# entropy-injection seam (adapt-toolkit/vodozemac @ feature/with-rng-entropy-injection).
+# See PATCH.md for the fork ledger and re-audit baseline.
+vodozemac = { path = "vendor/vodozemac" }
+# Trait glue for the injected CSPRNG. rand_core 0.10 is the version vodozemac's
+# `*_with_rng<R: CryptoRng>` bound resolves to; keep these unified.
+rand_core = { version = "0.10", default-features = false }
+# Deterministic, no_std-capable ChaCha20 CSPRNG expanded from the 32-byte seed.
+rand_chacha = { version = "0.10", default-features = false }
+# Non-elidable secret wiping on drop.
+zeroize = { version = "1", default-features = false }
+
+[dev-dependencies]
+# A second, independent seeded CSPRNG for cross-checking determinism in tests.
+rand = { version = "0.10", default-features = false, features = ["std_rng"] }
