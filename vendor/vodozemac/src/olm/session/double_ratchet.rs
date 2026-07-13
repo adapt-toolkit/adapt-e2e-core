@@ -14,7 +14,7 @@
 
 use std::fmt::{Debug, Formatter};
 
-use rand::CryptoRng;
+use rand_core::CryptoRng;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "low-level-api")]

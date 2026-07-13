@@ -15,7 +15,7 @@
 use std::fmt::Debug;
 
 use matrix_pickle::Decode;
-use rand::CryptoRng;
+use rand_core::CryptoRng;
 use serde::{Deserialize, Serialize};
 use x25519_dalek::SharedSecret;
 

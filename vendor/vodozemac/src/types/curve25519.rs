@@ -16,7 +16,9 @@ use std::fmt::Display;
 
 use base64::decoded_len_estimate;
 use matrix_pickle::{Decode, DecodeError};
-use rand::{CryptoRng, rng};
+use rand_core::CryptoRng;
+#[cfg(feature = "std-rng")]
+use rand::rng;
 use serde::{Deserialize, Serialize};
 use x25519_dalek::{EphemeralSecret, PublicKey, ReusableSecret, SharedSecret, StaticSecret};
 use zeroize::Zeroize;

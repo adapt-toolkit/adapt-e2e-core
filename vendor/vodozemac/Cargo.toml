@@ -37,8 +37,14 @@ unwrap_used = "deny"
 mem_forget = "deny"
 
 [features]
-default = ["libolm-compat", "precomputed-tables"]
-wasm_js = ["getrandom/wasm_js"]
+default = ["libolm-compat", "precomputed-tables", "std-rng"]
+wasm_js = ["dep:getrandom", "getrandom/wasm_js"]
+# ADAPT fork (adapt-e2e-core): gates the OS-RNG-backed default key-generation
+# methods and the non-Olm engines (SAS/ECIES/Megolm) plus dehydrated-device
+# support. With `std-rng` OFF (`--no-default-features`) the crate exposes only
+# the injected-entropy `*_with_rng` API and links NO `rand`/`getrandom`/`OsRng`
+# — the precondition for the RNG-isolation gate and the bare-metal target.
+std-rng = ["dep:rand", "dep:getrandom"]
 libolm-compat = []
 # Enables curve25519-dalek's precomputed basepoint tables, speeding up
 # fixed-base scalar multiplication (key generation and Ed25519 signing) at the
@@ -60,12 +66,15 @@ cbc = { version = "0.2.1" }
 chacha20poly1305 = "0.11.0"
 curve25519-dalek = { version = "5.0.0", default-features = false, features = ["zeroize"] }
 ed25519-dalek = { version = "3.0.0", default-features = false, features = ["rand_core", "serde", "hazmat", "zeroize"] }
-getrandom = "0.4.3"
+getrandom = { version = "0.4.3", optional = true }
 hkdf = "0.13.0"
 hmac = "0.13.0"
 matrix-pickle = { version = "0.2.2" }
 prost = "0.14.4"
-rand = "0.10.2"
+rand = { version = "0.10.2", optional = true }
+# The `CryptoRng` trait for the injected-entropy `*_with_rng` API is always
+# required, independent of the OS-RNG `std-rng` feature (ADAPT fork).
+rand_core = { version = "0.10.1", default-features = false }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_bytes = "0.11.19"
 serde_json = "1.0.150"

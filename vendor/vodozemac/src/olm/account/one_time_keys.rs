@@ -14,7 +14,7 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use rand::CryptoRng;
+use rand_core::CryptoRng;
 use serde::{Deserialize, Serialize};
 
 use super::PUBLIC_MAX_ONE_TIME_KEYS;

@@ -215,12 +215,17 @@ mod cipher;
 mod types;
 mod utilities;
 
+// The non-Olm engines draw from the OS RNG; the ADAPT `std-rng` feature gates
+// them out so the adapt path links no `rand`/`getrandom` (ADAPT fork).
+#[cfg(feature = "std-rng")]
 pub mod ecies;
 pub mod hazmat;
+#[cfg(feature = "std-rng")]
 pub mod megolm;
 pub mod olm;
-#[cfg(feature = "insecure-pk-encryption")]
+#[cfg(all(feature = "insecure-pk-encryption", feature = "std-rng"))]
 pub mod pk_encryption;
+#[cfg(feature = "std-rng")]
 pub mod sas;
 
 pub use base64::DecodeError as Base64DecodeError;

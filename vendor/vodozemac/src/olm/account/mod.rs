@@ -22,7 +22,7 @@ use chacha20poly1305::{
     aead::{Aead, KeyInit},
 };
 use cipher::common::Generate;
-use rand::CryptoRng;
+use rand_core::CryptoRng;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use zeroize::Zeroize;

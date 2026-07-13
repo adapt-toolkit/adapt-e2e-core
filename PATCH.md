@@ -51,9 +51,35 @@ test). Behaviour-preserving; the audited OsRng code paths are unchanged.
 These are required for the crate's `no_std`/rv32 lane and the RNG-isolation gate
 (SPEC §7.7, §9). They are NOT part of PR #379 (upstream wants OsRng-by-default):
 
-- **D2 (planned, M3):** make `rand` and `getrandom` *optional* Cargo deps bound
-  to a `std-rng` feature so `--no-default-features` links no `getrandom`/`OsRng`.
-- **D3 (planned, M3):** cfg-gate the non-Olm modules (`sas`, `ecies`, `megolm`,
-  dehydrated-device) off the adapt path to remove their OS-entropy draws.
+- **D2 (M3, IN PROGRESS):** make `rand` and `getrandom` *optional* Cargo deps
+  bound to a new `std-rng` feature (default-on) so `--no-default-features` links
+  no `getrandom`/`OsRng`. DONE so far: Cargo.toml (`rand`/`getrandom` optional;
+  `std-rng = ["dep:rand","dep:getrandom"]`; `default` includes `std-rng`;
+  `wasm_js` now `["dep:getrandom","getrandom/wasm_js"]`); added non-optional
+  `rand_core` (the `CryptoRng` trait for `*_with_rng`, always needed);
+  repointed `use rand::CryptoRng` → `use rand_core::CryptoRng` in 9 files;
+  gated `use rand::rng` behind `std-rng` in curve25519/ed25519. Default build +
+  all 40 crate tests stay green (behaviour-preserving).
+  REMAINING: gate the OS-RNG default-method chain behind `#[cfg(feature =
+  "std-rng")]` — the ~25 default (non-`_with_rng`) methods: leaves
+  `Curve25519SecretKey::new`(+Default), `Curve25519Keypair::new`,
+  `Ed25519Keypair::new`(+Default), `Ed25519SecretKey::new`, `RatchetKey::new`
+  (+Default); intermediates `Ratchet::new`, `RemoteRootKey::advance`,
+  `DoubleRatchet::{next_message_key,encrypt,encrypt_truncated_mac,active}`,
+  `InactiveDoubleRatchet::activate`, `Session::{new,encrypt}`,
+  `OneTimeKeys::{generate,generate_one_time_key}`, `FallbackKey::new`,
+  `FallbackKeys::generate_fallback_key`, `Account::{new,generate_one_time_keys,
+  generate_fallback_key,create_outbound_session}`; plus the dehydrated-device
+  methods (`Nonce::generate` OS entropy). Compiler-guided via `cargo build
+  --no-default-features` (lib only; tests stay under default `std-rng`). The
+  `_with_rng` chain is self-contained and must remain so (never call a default).
+  Currently `--no-default-features` does NOT yet compile (3 leaf `rng()` sites +
+  their cascade) — expected mid-D2.
+- **D3 (M3, DONE):** cfg-gated the non-Olm modules (`ecies`, `megolm`, `sas`,
+  `pk_encryption`) behind `std-rng` in `lib.rs` to remove their OS-entropy draws
+  from the adapt path.
 - **D4 (planned, M4):** `#![no_std]` conversion of the vendored Olm path
   (std::io pickle plumbing, etc.).
+- **After D2:** switch the crate's `vodozemac` dep to `default-features = false`
+  (Olm-only, no `std-rng`) and add the RNG-isolation symbol gate (SPEC §7.7):
+  grep the built object for `getrandom`/`OsRng`/`thread_rng`; fail if present.
