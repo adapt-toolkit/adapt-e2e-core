@@ -12,6 +12,8 @@
 //! identifies the one-time key by its public key (carried in the pre-key
 //! message), not by id.
 
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
 use vodozemac::KeyId;
 
 use crate::mgmt::account;

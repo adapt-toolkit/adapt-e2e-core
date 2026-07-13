@@ -17,7 +17,7 @@ mod one_time_keys;
 
 // ADAPT no_std alloc imports (std provides these in its prelude).
 #[cfg(not(feature = "std"))]
-use alloc::{borrow::ToOwned, boxed::Box, string::String, vec::Vec};
+use alloc::{string::String, vec::Vec};
 use hashbrown::HashMap;
 
 #[cfg(feature = "std-rng")]

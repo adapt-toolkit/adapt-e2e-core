@@ -134,6 +134,7 @@ impl OneTimeKeys {
         self.insert_secret_key(key_id, key, false)
     }
 
+    #[cfg(any(feature = "libolm-compat", feature = "std-rng"))]
     pub(crate) const fn secret_keys(&self) -> &BTreeMap<KeyId, Curve25519SecretKey> {
         &self.private_keys
     }

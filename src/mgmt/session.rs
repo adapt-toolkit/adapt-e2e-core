@@ -8,6 +8,8 @@
 //! consumes and decrypts that first message while establishing the session, so
 //! the plaintext would otherwise be irrecoverably lost. Flagged for review.
 
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
 use vodozemac::Curve25519PublicKey;
 use vodozemac::olm::{
     MessageType, OlmMessage, PreKeyMessage, Session, SessionConfig, SessionPickle,

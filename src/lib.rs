@@ -14,10 +14,13 @@
 //!   internally; each keygen-bearing call takes a 32-byte seed and produces
 //!   byte-identical output for identical `(state, seed, message)`.
 //!
-//! This is the milestone-M0 skeleton: it vendors the seed-injected vodozemac
-//! fork and exposes the [`seeded_rng`] entropy source that drives it. The
-//! management layer, C-ABI (`ffi`), pickle envelope, and adversarial test suite
-//! land in subsequent milestones.
+//! The crate is `#![no_std]` + `alloc` (the `std` feature, default-on, is only
+//! for native convenience — a better panic guard at the FFI boundary). The
+//! `--no-default-features` build targets bare-metal (SPEC §6.3, §9); it links no
+//! `getrandom`/`OsRng`, sourcing all entropy from the injected seed.
+#![cfg_attr(not(feature = "std"), no_std)]
+
+extern crate alloc;
 
 pub mod ffi;
 pub mod mgmt;

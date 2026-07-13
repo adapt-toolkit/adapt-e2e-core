@@ -50,3 +50,11 @@ vodozemac_upstream = { package = "vodozemac", version = "0.10.0" }
 # Property-based fuzzing of the C-ABI boundary (SPEC §7.6): malformed input must
 # never panic, always a clean error.
 proptest = "1"
+
+# 2nd pinned fork (security-backport-only, same discipline as vendor/vodozemac):
+# a minimal, behaviour-preserving patch of base64 0.22.1 that implements
+# `core::error::Error` unconditionally (== std::error::Error since Rust 1.81), so
+# the type impls Error in no_std too — the only remaining hurdle for the
+# bare-metal build. See PATCH.md (base64 fork).
+[patch.crates-io]
+base64 = { path = "vendor/base64" }

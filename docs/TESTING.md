@@ -57,5 +57,25 @@ crypto path is tracked upstream in the `cbc`/`cipher` crates.
 - **Coverage gate** ≥95% line on `ffi`/`mgmt`/`seeded_rng` (SPEC §7.10) — M5 CI.
 - **Constant-time smoke** (`dudect`-style) on decrypt/MAC (SPEC §7.9) — posture
   guard; the constant-time ops are inherited from vodozemac/dalek.
-- **`no_std` + wasm + rv32 test lanes** (SPEC §6.2, M4) — depends on the
-  getrandom-severance + no_std conversion of the vendored fork (M3/M4).
+- **wasm-emscripten lane** (SPEC §6.2) — DEFERRED (owner): needs the consumer's
+  emsdk/emcc (ABI-pinned). The crate is no_std-clean, so it builds consumer-side
+  once emsdk is available; `wasm32-unknown-unknown` can serve as a no_std proxy.
+
+## no_std / rv32 bare-metal (SPEC §6.3, §9) — DONE
+
+The crate and the vendored vodozemac fork are `#![no_std]` + `alloc` (the `std`
+feature, default-on, is native convenience only). `scripts/rv32_baremetal_build.sh`
+builds the crate as a `no_std` rlib for `riscv32imac-unknown-none-elf` with
+nightly `-Zbuild-std=core,alloc` — no OS, no std, no getrandom. This is the
+injected-entropy design win: because every keygen consumes the caller's seed via
+ChaCha20, the crate needs no OS entropy and no `getrandom` shim on bare metal.
+
+```sh
+rustup toolchain install nightly && rustup component add rust-src --toolchain nightly
+./scripts/rv32_baremetal_build.sh
+```
+
+Note: a no_std *library* defers the global allocator, `#[panic_handler]`, and
+`panic = "abort"` to the consumer's firmware; the rlib build verifies the crate's
+code is no_std-correct. base64's no_std `Error` support comes from the 2nd pinned
+fork (`vendor/base64`, see PATCH.md).

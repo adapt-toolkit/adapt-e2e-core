@@ -3,6 +3,8 @@
 //! pickle`, taking the caller's 32-byte seed and `pickle_key` and returning the
 //! new envelope-wrapped account pickle. The crate keeps no state.
 
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
 use vodozemac::olm::{Account, AccountPickle};
 
 use crate::mgmt::error::{Error, Result};

@@ -17,6 +17,18 @@ Every change to `vendor/` MUST be recorded here.
 | Upstream PR | matrix-org/vodozemac#379 (open) |
 | Vendored via | `git subtree --squash` into `vendor/vodozemac` |
 
+## 2nd pinned fork — base64 0.22.1 (security-backport-only)
+
+| Field | Value |
+|---|---|
+| Upstream | crates.io `base64` |
+| Pinned version | 0.22.1 |
+| Vendored at | `vendor/base64/`, applied via `[patch.crates-io]` in the crate Cargo.toml |
+| Delta | make the `Error` impls (`DecodeError`, `DecodeSliceError`, `EncodeSliceError`, `ParseAlphabetError`) unconditional `core::error::Error` (was `#[cfg(any(feature="std",test))] impl std::error::Error`) so the types impl `Error` in no_std |
+| Rationale | thiserror `#[from] base64::DecodeError` in vodozemac needs the source to impl `core::error::Error`; base64 0.22 only impls it under `std`. Required for the bare-metal build. |
+| Behaviour | **exactly preserving**: since Rust 1.81 `std::error::Error` is a re-export of `core::error::Error` (same trait), so std users see zero change; only 3 files (alphabet/decode/encode) touched, no decode/encode/padding/alphabet logic altered, Cargo.toml byte-identical. Critic-verified (agent a7aaf4e4d): APPROVE; all determinism golden vectors byte-identical. |
+| Policy | security-backport-only, same as vodozemac; re-audit = `diff -ru` vs pristine base64 0.22.1. **base64ct was explicitly rejected** — its padding semantics differ from vodozemac's "indifferent" mode (crypto-sensitive), so it is NOT a drop-in. |
+
 **Re-audit method:** `git diff` the vendored tree against pristine upstream 0.10.0.
 The Least-Authority audit (2022) predates 0.10.0 by years; it covers neither
 0.10.0's own drift nor our delta. This ledger scopes *our* delta only.
@@ -93,7 +105,15 @@ These are required for the crate's `no_std`/rv32 lane and the RNG-isolation gate
 - **D3 (M3, DONE):** cfg-gated the non-Olm modules (`ecies`, `megolm`, `sas`,
   `pk_encryption`) behind `std-rng` in `lib.rs` to remove their OS-entropy draws
   from the adapt path.
-- **D4 (M4, ~90% — preserved on branch `m4-no-std-wip`):** `#![no_std]` conversion.
+- **D4 (M4, DONE):** `#![no_std]` conversion COMPLETE. The crate + vendored
+  vodozemac build `#![no_std]`+`alloc`; the crate builds as a `no_std` rlib for
+  `riscv32imac-unknown-none-elf` (nightly `-Zbuild-std=core,alloc`) — bare-metal,
+  no OS, no getrandom (see `scripts/rv32_baremetal_build.sh`). The base64
+  `core::error::Error` hurdle was resolved by the 2nd pinned fork above. std build
+  + 40 tests + RNG-isolation gate all still green. wasm-emscripten is DEFERRED
+  (owner) — the no_std-clean crate is the deliverable; wasm builds consumer-side
+  once emsdk is available. Historical detail of the conversion below.
+- **D4-history (~90% checkpoint that preceded completion):** `#![no_std]` conversion.
   DONE on the WIP branch: `#![cfg_attr(not(feature="std"), no_std)]` + `#[macro_use]
   extern crate alloc`; `std`/`alloc` feature restructure with all deps
   `default-features = false` (+ `alloc`, `+block-padding` on cipher/cbc); per-file

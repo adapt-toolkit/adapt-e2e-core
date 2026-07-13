@@ -163,12 +163,14 @@ impl Ed25519Keypair {
         }
     }
 
+    #[cfg(any(feature = "libolm-compat", feature = "std-rng"))]
     pub(crate) fn from_unexpanded_key(secret_key: &[u8; 32]) -> Result<Self, crate::KeyError> {
         let secret_key = SigningKey::from_bytes(secret_key);
         let public_key = secret_key.verifying_key();
         Ok(Self { secret_key: secret_key.into(), public_key: Ed25519PublicKey(public_key) })
     }
 
+    #[cfg(any(feature = "libolm-compat", feature = "std-rng"))]
     pub(crate) fn unexpanded_secret_key(&self) -> Option<Box<[u8; 32]>> {
         match &self.secret_key {
             SecretKeys::Normal(k) => Some(Box::new(k.to_bytes())),
