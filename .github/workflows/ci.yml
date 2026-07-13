@@ -18,7 +18,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
-      - run: cargo fmt --all --check
+      # Only our crate; the vendored forks follow upstream formatting.
+      - run: cargo fmt -p adapt-e2e-core --check
       - run: cargo clippy --all-targets --all-features
       - run: cargo test
       # cbindgen header must be regenerated and unchanged (committed in sync).
