@@ -1,0 +1,24 @@
+[package]
+name = "adapt-e2e-core-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+# Run with: cargo +nightly fuzz run ffi_boundary   (requires: cargo install cargo-fuzz)
+# CI runs a bounded budget per PR; a long run happens nightly (SPEC §7.6).
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.adapt-e2e-core]
+path = ".."
+
+[[bin]]
+name = "ffi_boundary"
+path = "fuzz_targets/ffi_boundary.rs"
+test = false
+doc = false
+bench = false
