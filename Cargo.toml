@@ -17,6 +17,15 @@ default = ["std"]
 # `no_std` build (`--no-default-features`) is a first-class CI target (SPEC §9);
 # note the vendored vodozemac fork is not yet `no_std` (tracked for milestone M4).
 std = []
+# Regenerate the committed C header via cbindgen (host tooling only).
+generate-header = ["dep:cbindgen"]
+
+[build-dependencies]
+# Generates the committed C header from the extern "C" surface (SPEC §1, §2).
+# Opt-in via the `generate-header` feature so normal / no_std / rv32 builds do
+# not pull cbindgen (its proc-macro deps conflict with `-Zbuild-std`). The header
+# is committed; regenerate with `cargo build --features generate-header`.
+cbindgen = { version = "0.29", default-features = false, optional = true }
 
 [dependencies]
 # Vendored, pinned fork of vodozemac carrying the additive `*_with_rng`
