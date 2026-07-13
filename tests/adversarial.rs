@@ -69,6 +69,18 @@ fn determinism_golden_is_stable() {
 
 const GOLDEN_FIRST_MESSAGE_HEX: &str = "030a20403e5376b7e466f103572da5ac47cab01c7226109925ffb2b20e12c3f3476a561220325420fcc13cc3a0f84d673c85f59c6c2764afa49e256068c04025fb1855ef171a20091e876575795f5fced43ff7ce5ae652db21e3453c6b1ec5d3bd23b1ec410655223f030a205dfe8900bee4c0ff707a530cc7bbce1dbe2d649d9228b4852e746550b9189e7410002210175ac90997409da4ccfaee3a1649f35be5d5c36907081bc4";
 
+#[test]
+fn determinism_golden_dh_advance_is_stable() {
+    // Pins the highest-risk deterministic path: the DH-ratchet-advance encrypt,
+    // where the injected seed actually flows into a fresh ephemeral. A single
+    // pre-key golden does not cover this seam.
+    let m = alice_advancing_message(40);
+    let hex: String = m.iter().map(|b| format!("{b:02x}")).collect();
+    assert_eq!(hex, GOLDEN_DH_ADVANCE_HEX, "DH-advance determinism golden drifted");
+}
+
+const GOLDEN_DH_ADVANCE_HEX: &str = "030a20b2678df336ebede372ec359b26400701a83de822273499dd23da0ccfcb86872b100022109882071d900ccbfd8d095fd059a4deca769c230da415162f";
+
 // --- SPEC §7.4 retry-vs-replay entropy guard -------------------------------
 
 #[test]
@@ -124,31 +136,74 @@ fn skipped_keys_decrypt_out_of_order_within_window() {
     assert_eq!(p2, b"two", "the skipped key decrypts out of order");
 }
 
+// --- SPEC §7 skipped-key BOUND + tamper rejection --------------------------
+
+#[test]
+fn tampered_ciphertext_fails_cleanly() {
+    let (alice_sess, bob_sess) = established();
+    let e = session::encrypt(&alice_sess, b"authentic", &[30; 32], &PK).unwrap();
+
+    let mut tampered = e.message.clone();
+    let last = tampered.len() - 1;
+    tampered[last] ^= 0x01; // flip a bit -> MAC must reject
+
+    let res = session::decrypt(&bob_sess, e.msg_type, &tampered, &PK);
+    assert!(res.is_err(), "tampered ciphertext must fail the MAC, not decrypt");
+}
+
 // --- SPEC §7.8 NEGATIVE forward secrecy (the keystone) ---------------------
 
 #[test]
-fn negative_forward_secrecy_evicted_key_cannot_decrypt() {
+fn consumed_in_order_key_is_not_retained() {
+    // Honest, narrow claim: an in-order-consumed message key is discarded (never
+    // enters the skip store), so the resulting state cannot re-decrypt it.
+    let (alice_sess, bob_sess) = established();
+    let e = session::encrypt(&alice_sess, b"once", &[31; 32], &PK).unwrap();
+
+    let (pt, bob_after) = session::decrypt(&bob_sess, e.msg_type, &e.message, &PK).unwrap();
+    assert_eq!(pt, b"once");
+    assert_ne!(bob_after, bob_sess, "state genuinely advanced");
+    assert!(
+        session::decrypt(&bob_after, e.msg_type, &e.message, &PK).is_err(),
+        "in-order key is discarded, not stashed"
+    );
+}
+
+#[test]
+fn negative_forward_secrecy_evicted_vs_retained() {
+    // The rigorous keystone: distinguish an EVICTED key (forward-secret; gone
+    // from the current pickle) from a RETAINED skipped key (recoverable from the
+    // 40-key store). Alice sends 50 messages; Bob decrypts only the LAST, which
+    // stashes the newest 40 skipped keys and EVICTS the oldest. From Bob's
+    // compromised current state:
+    //   * the very first message (>40 back) MUST fail  -> forward secrecy holds;
+    //   * a recent skipped message (1 back)  MUST succeed -> the store is the
+    //     only recovery path, so the failure above is genuine eviction, not a
+    //     mere "already used" artefact.
     let (alice_sess, bob_sess) = established();
 
-    // Alice sends two normal messages in order.
-    let e_a = session::encrypt(&alice_sess, b"superseded", &[20; 32], &PK).unwrap();
-    let e_b = session::encrypt(&e_a.session, b"latest", &[21; 32], &PK).unwrap();
+    let mut msgs = Vec::new();
+    let mut sess = alice_sess;
+    for i in 0..50u8 {
+        let e = session::encrypt(&sess, &[b'm', i], &[100 + i; 32], &PK).unwrap();
+        sess = e.session.clone();
+        msgs.push(e);
+    }
 
-    // Bob decrypts both IN ORDER. Decrypting e_a consumes and *discards* its
-    // message key (in-order, so it never enters the skip store); decrypting e_b
-    // advances the chain further.
-    let (pa, bob_a) = session::decrypt(&bob_sess, e_a.msg_type, &e_a.message, &PK).unwrap();
-    assert_eq!(pa, b"superseded");
-    let (pb, bob_b) = session::decrypt(&bob_a, e_b.msg_type, &e_b.message, &PK).unwrap();
-    assert_eq!(pb, b"latest");
+    // Bob decrypts the last message first (skips 0..=48).
+    let last = &msgs[49];
+    let (_pt, bob_now) = session::decrypt(&bob_sess, last.msg_type, &last.message, &PK).unwrap();
 
-    // Simulate a COMPROMISE of Bob's current (advanced) state `bob_b` and attempt
-    // to recover the superseded message. The evicted key is gone from the current
-    // pickle: decryption MUST fail. This is the crate's forward-secrecy guarantee
-    // for what it controls (the host must also destroy the old pickle bytes).
-    let recovered = session::decrypt(&bob_b, e_a.msg_type, &e_a.message, &PK);
+    // Oldest message: evicted from the 40-key store -> forward secrecy.
+    let first = &msgs[0];
     assert!(
-        recovered.is_err(),
-        "forward secrecy breach: compromised current state decrypted a superseded message"
+        session::decrypt(&bob_now, first.msg_type, &first.message, &PK).is_err(),
+        "forward-secrecy breach: an evicted key decrypted a superseded message"
     );
+
+    // Recent skipped message: still in the store -> proves the store is the
+    // recovery path and the eviction above is real.
+    let recent = &msgs[48];
+    let (pt, _) = session::decrypt(&bob_now, recent.msg_type, &recent.message, &PK).unwrap();
+    assert_eq!(pt, &[b'm', 48]);
 }

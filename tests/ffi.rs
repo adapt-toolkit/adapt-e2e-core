@@ -253,7 +253,7 @@ fn create_is_deterministic_over_the_abi() {
 #[test]
 fn malformed_and_null_inputs_never_panic() {
     // Garbage account pickle -> clean negative rc (Version/BadPickle), no panic.
-    let garbage = vec![0xFFu8; 200];
+    let garbage = [0xFFu8; 200];
     let (rc, _) = one_out(|p, l| unsafe {
         e2e_account_gen_otks(garbage.as_ptr(), garbage.len(), 1, [0u8; 32].as_ptr(), PK.as_ptr(), p, l)
     });
@@ -291,7 +291,7 @@ fn malformed_and_null_inputs_never_panic() {
     assert_eq!(rc, RC_OK);
     sess.truncate(sl);
 
-    let junk = vec![0x41u8; 120];
+    let junk = [0x41u8; 120];
     let (rc, _) = one_out(|p, l| {
         let mut s2 = vec![0u8; 16384];
         let mut s2l = s2.len();
