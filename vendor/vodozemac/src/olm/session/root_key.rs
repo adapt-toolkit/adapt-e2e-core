@@ -71,6 +71,7 @@ impl RemoteRootKey {
         Self { key: bytes }
     }
 
+    #[cfg(feature = "std-rng")]
     pub(super) fn advance(
         &self,
         remote_ratchet_key: &RemoteRatchetKey,

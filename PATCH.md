@@ -51,7 +51,22 @@ test). Behaviour-preserving; the audited OsRng code paths are unchanged.
 These are required for the crate's `no_std`/rv32 lane and the RNG-isolation gate
 (SPEC §7.7, §9). They are NOT part of PR #379 (upstream wants OsRng-by-default):
 
-- **D2 (M3, IN PROGRESS):** make `rand` and `getrandom` *optional* Cargo deps
+- **D2 (M3, DONE):** `rand`, `getrandom`, and `chacha20poly1305` are optional
+  Cargo deps bound to the default-on `std-rng` feature; `--no-default-features`
+  builds the Olm path with the injected-entropy `*_with_rng` API only and links
+  no `rand`/`getrandom`/`OsRng`. The ~25 OS-RNG default methods (leaf ctors,
+  intermediate chain, `Account`/`Session` public defaults, dehydrated-device)
+  are `#[cfg(feature = "std-rng")]`; `rand_core` (the `CryptoRng` trait) is a
+  new non-optional dep. The `getrandom`-crate leak that entered transitively via
+  `chacha20poly1305 -> aead -> crypto-common/getrandom` is severed by making
+  `chacha20poly1305` optional (it is used only by gated dehydration/ECIES/PK
+  paths). The crate depends on vodozemac with `default-features = false` for the
+  shipped lib and re-enables `std-rng` via a dev-dependency for tests. The
+  RNG-isolation gate (`scripts/rng_isolation_gate.sh`, SPEC §7.7) passes: 0
+  forbidden symbols, `getrandom` absent from the normal dep graph. (Rust std's
+  own `std::sys::random` remains while linking std; it goes away on `no_std`/M4.)
+  ORIGINAL PLAN (retained for history):
+- **D2-orig (superseded by the above):** make `rand` and `getrandom` *optional*
   bound to a new `std-rng` feature (default-on) so `--no-default-features` links
   no `getrandom`/`OsRng`. DONE so far: Cargo.toml (`rand`/`getrandom` optional;
   `std-rng = ["dep:rand","dep:getrandom"]`; `default` includes `std-rng`;

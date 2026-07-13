@@ -60,6 +60,7 @@ impl Debug for RemoteRatchetKey {
 }
 
 impl RatchetKey {
+    #[cfg(feature = "std-rng")]
     pub fn new() -> Self {
         Self(Curve25519SecretKey::new())
     }
@@ -73,6 +74,7 @@ impl RatchetKey {
     }
 }
 
+#[cfg(feature = "std-rng")]
 impl Default for RatchetKey {
     fn default() -> Self {
         Self::new()
@@ -128,6 +130,7 @@ pub(super) struct Ratchet {
 }
 
 impl Ratchet {
+    #[cfg(feature = "std-rng")]
     pub fn new(root_key: RootKey) -> Self {
         let ratchet_key = RatchetKey::new();
 

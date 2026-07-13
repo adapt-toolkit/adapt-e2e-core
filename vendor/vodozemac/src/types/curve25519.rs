@@ -33,6 +33,7 @@ pub struct Curve25519SecretKey(Box<StaticSecret>);
 
 impl Curve25519SecretKey {
     /// Generate a new, random, Curve25519SecretKey.
+    #[cfg(feature = "std-rng")]
     pub fn new() -> Self {
         let mut rng = rng();
 
@@ -89,6 +90,7 @@ impl Curve25519SecretKey {
     }
 }
 
+#[cfg(feature = "std-rng")]
 impl Default for Curve25519SecretKey {
     fn default() -> Self {
         Self::new()
@@ -104,6 +106,7 @@ pub(crate) struct Curve25519Keypair {
 }
 
 impl Curve25519Keypair {
+    #[cfg(feature = "std-rng")]
     pub fn new() -> Self {
         let secret_key = Curve25519SecretKey::new();
         let public_key = Curve25519PublicKey::from(&secret_key);

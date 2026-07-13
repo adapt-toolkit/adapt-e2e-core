@@ -113,6 +113,7 @@ impl OneTimeKeys {
         (public_key, removed)
     }
 
+    #[cfg(feature = "std-rng")]
     fn generate_one_time_key(&mut self) -> (Curve25519PublicKey, Option<Curve25519PublicKey>) {
         let key_id = KeyId(self.next_key_id);
         let key = Curve25519SecretKey::new();
@@ -137,6 +138,7 @@ impl OneTimeKeys {
         !self.unpublished_public_keys.contains_key(key_id)
     }
 
+    #[cfg(feature = "std-rng")]
     pub fn generate(&mut self, count: usize) -> OneTimeKeyGenerationResult {
         let mut removed_keys = Vec::new();
         let mut created_keys = Vec::new();

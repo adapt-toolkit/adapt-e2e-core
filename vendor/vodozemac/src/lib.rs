@@ -299,6 +299,7 @@ pub enum DehydratedDeviceError {
     #[error("The pickle wasn't valid base64: {0}")]
     Base64(#[from] Base64DecodeError),
     /// The pickle could not have been decrypted.
+    #[cfg(feature = "std-rng")]
     #[error("The pickle couldn't be decrypted: {0}")]
     Decryption(#[from] chacha20poly1305::aead::Error),
     /// There was an error with the libolm pickle format

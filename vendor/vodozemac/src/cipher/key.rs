@@ -35,12 +35,14 @@ pub(crate) struct ExpandedKeys(Box<[u8; 80]>);
 
 impl ExpandedKeys {
     const OLM_HKDF_INFO: &'static [u8] = b"OLM_KEYS";
+    #[cfg(feature = "std-rng")]
     const MEGOLM_HKDF_INFO: &'static [u8] = b"MEGOLM_KEYS";
 
     fn new(message_key: &[u8; 32]) -> Self {
         Self::new_helper(message_key, Self::OLM_HKDF_INFO)
     }
 
+    #[cfg(feature = "std-rng")]
     fn new_megolm(message_key: &[u8; 128]) -> Self {
         Self::new_helper(message_key, Self::MEGOLM_HKDF_INFO)
     }
@@ -76,6 +78,7 @@ impl CipherKeys {
         Self::from_expanded_keys(expanded_keys)
     }
 
+    #[cfg(feature = "std-rng")]
     pub fn new_megolm(message_key: &[u8; 128]) -> Self {
         let expanded_keys = ExpandedKeys::new_megolm(message_key);
 

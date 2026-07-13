@@ -28,6 +28,7 @@ pub(super) struct FallbackKey {
 }
 
 impl FallbackKey {
+    #[cfg(feature = "std-rng")]
     fn new(key_id: KeyId) -> Self {
         let key = Curve25519SecretKey::new();
 
@@ -79,6 +80,7 @@ impl FallbackKeys {
         }
     }
 
+    #[cfg(feature = "std-rng")]
     pub fn generate_fallback_key(&mut self) -> Option<Curve25519PublicKey> {
         let key_id = KeyId(self.key_id);
         self.key_id += 1;

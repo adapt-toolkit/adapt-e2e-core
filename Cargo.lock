@@ -1229,6 +1229,7 @@ dependencies = [
  "matrix-pickle",
  "prost",
  "rand 0.10.2",
+ "rand_core 0.10.1",
  "serde",
  "serde_bytes",
  "serde_json",

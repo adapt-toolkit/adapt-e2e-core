@@ -26,6 +26,7 @@ use super::{base64_decode, base64_encode};
 use crate::{LibolmPickleError, cipher::Cipher};
 
 /// Fetch the pickle version from the given pickle source.
+#[cfg(any(feature = "libolm-compat", feature = "std-rng"))]
 pub(crate) fn get_version(source: &[u8]) -> Option<u32> {
     // Pickle versions are always u32 encoded as a fixed sized integer in
     // big endian encoding.

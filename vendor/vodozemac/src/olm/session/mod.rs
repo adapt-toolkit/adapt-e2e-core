@@ -322,6 +322,7 @@ impl Session {
 }
 
 impl Session {
+    #[cfg(feature = "std-rng")]
     pub(super) fn new(
         config: SessionConfig,
         shared_secret: Shared3DHSecret,
@@ -401,6 +402,7 @@ impl Session {
     /// depending on whether the session is fully established. A [`Session`] is
     /// fully established once you receive (and decrypt) at least one
     /// message from the other side.
+    #[cfg(feature = "std-rng")]
     pub fn encrypt(&mut self, plaintext: impl AsRef<[u8]>) -> Result<OlmMessage, EncryptionError> {
         let message = match self.config.version {
             Version::V1 => self.sending_ratchet.encrypt_truncated_mac(plaintext.as_ref()),

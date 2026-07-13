@@ -17,14 +17,17 @@ mod one_time_keys;
 
 use std::collections::HashMap;
 
+#[cfg(feature = "std-rng")]
 use chacha20poly1305::{
     ChaCha20Poly1305, Nonce,
     aead::{Aead, KeyInit},
 };
+#[cfg(feature = "std-rng")]
 use cipher::common::Generate;
 use rand_core::CryptoRng;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+#[cfg(feature = "std-rng")]
 use zeroize::Zeroize;
 
 pub use self::one_time_keys::OneTimeKeyGenerationResult;
@@ -115,6 +118,7 @@ pub struct InboundCreationResult {
 }
 
 /// Return type for the creation of a dehydrated device.
+#[cfg(feature = "std-rng")]
 #[derive(Debug)]
 pub struct DehydratedDeviceResult {
     /// The encrypted dehydrated device, as a base64-encoded string.
@@ -142,6 +146,7 @@ pub struct Account {
 
 impl Account {
     /// Create a new [`Account`] with new random identity keys.
+    #[cfg(feature = "std-rng")]
     pub fn new() -> Self {
         Self {
             signing_key: Ed25519Keypair::new(),
@@ -213,6 +218,7 @@ impl Account {
     }
 
     /// Create a [`Session`] with the given identity key and one-time key.
+    #[cfg(feature = "std-rng")]
     pub fn create_outbound_session(
         &self,
         session_config: SessionConfig,
@@ -399,6 +405,7 @@ impl Account {
     /// places for one-time keys, If we try to generate new ones while the store
     /// is completely populated, the oldest one-time keys will get discarded
     /// to make place for new ones.
+    #[cfg(feature = "std-rng")]
     pub fn generate_one_time_keys(&mut self, count: usize) -> OneTimeKeyGenerationResult {
         self.one_time_keys.generate(count)
     }
@@ -453,6 +460,7 @@ impl Account {
     /// Returns the public Curve25519 key of the *previous* fallback key, that
     /// is, the one that will get removed from the [`Account`] when this method
     /// is called. This return value is mostly useful for logging purposes.
+    #[cfg(feature = "std-rng")]
     pub fn generate_fallback_key(&mut self) -> Option<Curve25519PublicKey> {
         self.fallback_keys.generate_fallback_key()
     }
@@ -608,6 +616,7 @@ impl Account {
     ///
     /// The format used here is defined in
     /// [MSC3814](https://github.com/matrix-org/matrix-spec-proposals/pull/3814).
+    #[cfg(feature = "std-rng")]
     pub fn to_dehydrated_device(
         &self,
         key: &[u8; 32],
@@ -642,6 +651,7 @@ impl Account {
     /// [`Account::to_dehydrated_device`]. `key` is a 256-bit (32-byte) key for
     /// decrypting the device, and must be the same key used when
     /// [`Account::to_dehydrated_device`] was called.
+    #[cfg(feature = "std-rng")]
     pub fn from_dehydrated_device(
         ciphertext: &str,
         nonce: &str,
@@ -697,6 +707,7 @@ impl Account {
     }
 }
 
+#[cfg(feature = "std-rng")]
 impl Default for Account {
     fn default() -> Self {
         Self::new()

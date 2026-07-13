@@ -19,6 +19,16 @@ to run each gate. Everything below runs green today except where marked pending.
 
 Run everything: `cargo test`. Lint gate: `cargo clippy --all-targets`.
 
+## RNG-isolation gate (SPEC §7.7)
+
+`scripts/rng_isolation_gate.sh` builds the release staticlib **without**
+dev-dependencies (so vodozemac's `std-rng` feature is off) and fails if the
+object links the `getrandom` crate, `OsRng`, `thread_rng`, or the `rand`
+thread-local generator, or if `getrandom` appears in the normal dependency
+graph. This proves the adapt path is a pure function of its injected seed. (Rust
+std's own `std::sys::random` is not the getrandom crate and is expected while
+linking std; it disappears on the `no_std`/bare-metal targets.)
+
 ## miri (UB / aliasing at the FFI marshalling)
 
 The C-ABI does raw-pointer marshalling (`src/ffi.rs`: `in_slice`, `in_arr32`,

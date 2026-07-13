@@ -50,6 +50,7 @@ pub(super) struct DoubleRatchet {
 }
 
 impl DoubleRatchet {
+    #[cfg(feature = "std-rng")]
     pub fn next_message_key(&mut self) -> Option<MessageKey> {
         match &mut self.inner {
             DoubleRatchetState::Inactive(ratchet) => {
@@ -81,7 +82,7 @@ impl DoubleRatchet {
         }
     }
 
-    #[cfg(feature = "experimental-session-config")]
+    #[cfg(all(feature = "experimental-session-config", feature = "std-rng"))]
     pub fn encrypt(&mut self, plaintext: &[u8]) -> Result<Message, EncryptionError> {
         Ok(self.next_message_key().ok_or(EncryptionError::NonContributoryKey)?.encrypt(plaintext))
     }
@@ -98,6 +99,7 @@ impl DoubleRatchet {
             .encrypt(plaintext))
     }
 
+    #[cfg(feature = "std-rng")]
     pub fn encrypt_truncated_mac(&mut self, plaintext: &[u8]) -> Result<Message, EncryptionError> {
         Ok(self
             .next_message_key()
@@ -118,6 +120,7 @@ impl DoubleRatchet {
 
     /// Create a new `DoubleRatchet` instance, based on a newly-calculated
     /// shared secret.
+    #[cfg(feature = "std-rng")]
     pub fn active(shared_secret: Shared3DHSecret) -> Self {
         let (root_key, chain_key) = shared_secret.expand();
 
@@ -229,18 +232,26 @@ impl DoubleRatchet {
         let (ratchet, receiver_chain) = match &self.inner {
             DoubleRatchetState::Active(r) => r.advance(ratchet_key)?,
             DoubleRatchetState::Inactive(r) => {
-                let ratchet = r.activate()?;
                 // Advancing an inactive ratchet shouldn't be possible since the
-                // other side did not yet receive our new ratchet key.
-                //
-                // This will likely end up in a decryption error but for
-                // consistency sake and avoiding the leakage of our internal
-                // state it's better to error out there.
-                let ret = ratchet.advance(ratchet_key)?;
+                // other side did not yet receive our new ratchet key. Without
+                // `std-rng` we cannot mint the ratchet key needed to activate
+                // here; this edge resolves to a decryption error — the same
+                // observable outcome as the std-rng path, which also errors out
+                // (for consistency and to avoid leaking our internal state).
+                #[cfg(not(feature = "std-rng"))]
+                {
+                    let _ = r;
+                    return None;
+                }
+                #[cfg(feature = "std-rng")]
+                {
+                    let ratchet = r.activate()?;
+                    let ret = ratchet.advance(ratchet_key)?;
 
-                self.inner = ratchet.into();
+                    self.inner = ratchet.into();
 
-                ret
+                    ret
+                }
             }
         };
 
@@ -299,6 +310,7 @@ struct InactiveDoubleRatchet {
 }
 
 impl InactiveDoubleRatchet {
+    #[cfg(feature = "std-rng")]
     fn activate(&self) -> Option<ActiveDoubleRatchet> {
         let (root_key, chain_key, ratchet_key) = self.root_key.advance(&self.ratchet_key)?;
         let active_ratchet = Ratchet::new_with_ratchet_key(root_key, ratchet_key);

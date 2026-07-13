@@ -122,6 +122,7 @@ impl Cipher {
     ///
     /// This key derivation format is typically used for generating individual
     /// message keys in the Megolm ratchet.
+    #[cfg(feature = "std-rng")]
     pub fn new_megolm(&key: &[u8; 128]) -> Self {
         let keys = CipherKeys::new_megolm(&key);
 

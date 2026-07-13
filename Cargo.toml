@@ -22,7 +22,12 @@ std = []
 # Vendored, pinned fork of vodozemac carrying the additive `*_with_rng`
 # entropy-injection seam (adapt-toolkit/vodozemac @ feature/with-rng-entropy-injection).
 # See PATCH.md for the fork ledger and re-audit baseline.
-vodozemac = { path = "vendor/vodozemac" }
+#
+# `default-features = false` drops the OS-RNG `std-rng` feature so the SHIPPED
+# library links no `rand`/`getrandom`/`OsRng` — the adapt path uses only the
+# injected-entropy `*_with_rng` API (SPEC §7.7 / §9). Tests re-enable `std-rng`
+# via the dev-dependency below (they use the default OsRng peer helpers).
+vodozemac = { path = "vendor/vodozemac", default-features = false }
 # Trait glue for the injected CSPRNG. rand_core 0.10 is the version vodozemac's
 # `*_with_rng<R: CryptoRng>` bound resolves to; keep these unified.
 rand_core = { version = "0.10", default-features = false }
@@ -32,6 +37,10 @@ rand_chacha = { version = "0.10", default-features = false }
 zeroize = { version = "1", default-features = false }
 
 [dev-dependencies]
+# Re-enable vodozemac's OS-RNG default methods for tests only (the shipped lib
+# stays getrandom-free). Feature unification makes `std-rng` active under
+# `cargo test`/`cargo bench` but not under `cargo build`.
+vodozemac = { path = "vendor/vodozemac", features = ["std-rng"] }
 # A second, independent seeded CSPRNG for cross-checking determinism in tests.
 rand = { version = "0.10", default-features = false, features = ["std_rng"] }
 # The REAL upstream vodozemac from crates.io, as an independent interop oracle
