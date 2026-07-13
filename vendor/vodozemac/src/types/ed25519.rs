@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::fmt::Display;
+use core::fmt::Display;
 
 use base64::decoded_len_estimate;
 use base64ct::Encoding;
@@ -183,7 +183,7 @@ impl Ed25519Keypair {
 
     #[cfg(feature = "libolm-compat")]
     pub(crate) fn expanded_secret_key(&self) -> Box<[u8; 64]> {
-        use std::ops::DerefMut;
+        use core::ops::DerefMut;
 
         use sha2::Digest;
 
@@ -452,15 +452,15 @@ impl Ed25519PublicKey {
 }
 
 impl Display for Ed25519PublicKey {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.to_base64())
     }
 }
 
-impl std::fmt::Debug for Ed25519PublicKey {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Debug for Ed25519PublicKey {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let s = format!("ed25519:{self}");
-        <str as std::fmt::Debug>::fmt(&s, f)
+        <str as core::fmt::Debug>::fmt(&s, f)
     }
 }
 
@@ -496,15 +496,15 @@ impl Ed25519Signature {
 }
 
 impl Display for Ed25519Signature {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.to_base64())
     }
 }
 
-impl std::fmt::Debug for Ed25519Signature {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Debug for Ed25519Signature {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let s = format!("ed25519:{self}");
-        <str as std::fmt::Debug>::fmt(&s, f)
+        <str as core::fmt::Debug>::fmt(&s, f)
     }
 }
 

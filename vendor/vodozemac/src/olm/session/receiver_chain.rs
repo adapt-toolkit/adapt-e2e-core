@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use arrayvec::ArrayVec;
 use serde::{Deserialize, Serialize};
@@ -113,7 +113,7 @@ impl FoundMessageKey<'_> {
 }
 
 impl<'a> Debug for FoundMessageKey<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Existing(key) => f.debug_tuple("Existing").field(key).finish(),
             Self::New(found_key) => {
@@ -157,7 +157,7 @@ pub(super) struct ReceiverChain {
 }
 
 impl Debug for ReceiverChain {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let Self { ratchet_count, ratchet_key, hkdf_ratchet, skipped_message_keys } = self;
 
         f.debug_struct("ReceiverChain")

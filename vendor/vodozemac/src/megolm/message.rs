@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use prost::Message;
 use serde::{Deserialize, Serialize};
@@ -310,7 +310,7 @@ impl TryFrom<&[u8]> for MegolmMessage {
 }
 
 impl Debug for MegolmMessage {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let Self { version, ciphertext: _, message_index, mac: _, signature: _ } = self;
 
         f.debug_struct("MegolmMessage")

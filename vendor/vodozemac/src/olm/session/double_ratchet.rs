@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::fmt::{Debug, Formatter};
+use core::fmt::{Debug, Formatter};
 
 use rand_core::CryptoRng;
 use serde::{Deserialize, Serialize};
@@ -260,7 +260,7 @@ impl DoubleRatchet {
 }
 
 impl Debug for DoubleRatchet {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         let mut dbg = f.debug_tuple("DoubleRatchet");
         match &self.inner {
             DoubleRatchetState::Inactive(r) => dbg.field(r),
@@ -341,7 +341,7 @@ impl InactiveDoubleRatchet {
 }
 
 impl Debug for InactiveDoubleRatchet {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("InactiveDoubleRatchet")
             .field("ratchet_count", &self.ratchet_count)
             .field("ratchet_key", &self.ratchet_key)
@@ -410,7 +410,7 @@ impl ActiveDoubleRatchet {
 }
 
 impl Debug for ActiveDoubleRatchet {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         let active_ratchet_public_key: RatchetPublicKey = self.active_ratchet.ratchet_key().into();
         f.debug_struct("ActiveDoubleRatchet")
             .field("ratchet_count", &self.ratchet_count)
@@ -453,7 +453,7 @@ impl RatchetCount {
 }
 
 impl Debug for RatchetCount {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
             RatchetCount::Known(count) => write!(f, "{count}"),
             RatchetCount::Unknown(_) => write!(f, "<unknown>"),

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use matrix_pickle::Decode;
 use rand_core::CryptoRng;
@@ -54,7 +54,7 @@ pub struct RatchetPublicKey(Curve25519PublicKey);
 pub(super) struct RemoteRatchetKey(pub(super) Curve25519PublicKey);
 
 impl Debug for RemoteRatchetKey {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         self.0.fmt(f)
     }
 }

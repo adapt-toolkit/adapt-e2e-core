@@ -56,8 +56,8 @@ impl SessionKeys {
     }
 }
 
-impl std::fmt::Debug for SessionKeys {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Debug for SessionKeys {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("SessionKeys")
             .field("identity_key", &self.identity_key.to_base64())
             .field("base_key", &self.base_key.to_base64())

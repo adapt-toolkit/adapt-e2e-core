@@ -125,8 +125,8 @@ pub struct EstablishedSas {
     their_public_key: Curve25519PublicKey,
 }
 
-impl std::fmt::Debug for EstablishedSas {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Debug for EstablishedSas {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("EstablishedSas")
             .field("our_public_key", &self.our_public_key.to_base64())
             .field("their_public_key", &self.their_public_key.to_base64())

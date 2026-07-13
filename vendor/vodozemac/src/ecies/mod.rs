@@ -359,8 +359,8 @@ pub struct EstablishedEcies {
     role: Role,
 }
 
-impl std::fmt::Debug for EstablishedEcies {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Debug for EstablishedEcies {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("EstablishedEcies")
             .field("our_public_key", &self.our_public_key)
             .field("their_public_key", &self.their_public_key)

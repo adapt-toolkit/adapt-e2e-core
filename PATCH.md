@@ -93,8 +93,33 @@ These are required for the crate's `no_std`/rv32 lane and the RNG-isolation gate
 - **D3 (M3, DONE):** cfg-gated the non-Olm modules (`ecies`, `megolm`, `sas`,
   `pk_encryption`) behind `std-rng` in `lib.rs` to remove their OS-entropy draws
   from the adapt path.
-- **D4 (planned, M4):** `#![no_std]` conversion of the vendored Olm path
-  (std::io pickle plumbing, etc.).
+- **D4 (M4, IN PROGRESS):** `#![no_std]` conversion of the vendored Olm path.
+  FEASIBILITY CONFIRMED: the native pickle backend `serde_json` is `#![no_std]`
+  with `alloc` (the make-or-break); `thiserror` 2.0 is no_std via
+  `default-features = false`; `std::io` on the adapt path is ONLY the
+  `matrix_pickle` `Decode`/`Encode` impls (libolm binary format — the native
+  pickle uses serde), so `libolm-compat` will imply `std` and `matrix-pickle`
+  becomes optional under it. DONE so far: `std::fmt`/`std::ops` → `core::fmt`/
+  `core::ops` (behaviour-neutral; std build + 40 tests green).
+  REMAINING: add a `std` feature (default-on) + `alloc`; restructure deps to
+  `default-features = false` + `alloc`/`std` propagation (serde, serde_json,
+  base64, base64ct, prost, thiserror, sha2/hkdf/hmac/aes/cbc/cipher/subtle,
+  dalek `alloc`); gate the `matrix_pickle` `Decode`/`Encode` impls +
+  `std::io::Cursor` uses behind `libolm-compat`; replace the runtime `HashMap`
+  (`OneTimeKeys::key_ids_by_key`, `Account::one_time_keys()`/`fallback_key()`
+  returns) with `hashbrown` or `BTreeMap`; `#![cfg_attr(not(feature="std"),
+  no_std)]` + `extern crate alloc;` and fix `use std::` → `core::`/`alloc::`;
+  then make the CRATE `#![no_std]`. Compiler-guided via
+  `cargo build --no-default-features`.
+- **M4 BUILD LANES — toolchain reality (checked):**
+  - **rv32 bare-metal FEASIBLE:** `riscv32imac-unknown-none-elf` target +
+    nightly + `rust-src` are installed; `-Zbuild-std=core,alloc`, `panic=abort`,
+    float-ABI pin. The M3 getrandom-severance is exactly what unblocks it.
+  - **wasm-emscripten BLOCKED (environmental):** `emcc` is NOT installed, and the
+    spec target `wasm32-unknown-emscripten` must be ABI-pinned to the *consumer's*
+    emcc, which is unavailable here. Needs emsdk (a large external SDK) or the
+    consumer's toolchain. `wasm32-unknown-unknown` could serve as a no_std proxy
+    but is not the spec target.
 - **After D2:** switch the crate's `vodozemac` dep to `default-features = false`
   (Olm-only, no `std-rng`) and add the RNG-isolation symbol gate (SPEC §7.7):
   grep the built object for `getrandom`/`OsRng`/`thread_rng`; fail if present.
