@@ -31,6 +31,9 @@
 //!
 //! [spec]: https://gitlab.matrix.org/matrix-org/olm/-/blob/master/docs/olm.md#initial-setup
 
+// ADAPT no_std alloc imports (std provides these in its prelude).
+#[cfg(not(feature = "std"))]
+use alloc::boxed::Box;
 use hkdf::Hkdf;
 use sha2::Sha256;
 use x25519_dalek::SharedSecret;

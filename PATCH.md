@@ -93,7 +93,30 @@ These are required for the crate's `no_std`/rv32 lane and the RNG-isolation gate
 - **D3 (M3, DONE):** cfg-gated the non-Olm modules (`ecies`, `megolm`, `sas`,
   `pk_encryption`) behind `std-rng` in `lib.rs` to remove their OS-entropy draws
   from the adapt path.
-- **D4 (M4, IN PROGRESS):** `#![no_std]` conversion of the vendored Olm path.
+- **D4 (M4, ~90% — preserved on branch `m4-no-std-wip`):** `#![no_std]` conversion.
+  DONE on the WIP branch: `#![cfg_attr(not(feature="std"), no_std)]` + `#[macro_use]
+  extern crate alloc`; `std`/`alloc` feature restructure with all deps
+  `default-features = false` (+ `alloc`, `+block-padding` on cipher/cbc); per-file
+  cfg-gated `use alloc::{...}` imports across the Olm path; gated ALL
+  `matrix_pickle` (libolm-only) behind `libolm-compat` (imports, `Decode`/`Encode`
+  derives via `cfg_attr`, manual impls, `mod libolm`, `LibolmPickleError` variants);
+  gated `mod dehydrated_device` + `from_decrypted_dehydrated_device` behind
+  `std-rng`; `std::collections::{BTreeMap,HashMap}` -> `alloc::collections::BTreeMap`
+  + `hashbrown::HashMap` (new dep). Error count 147 -> 6.
+  **REMAINING BLOCKER (real, ecosystem-level):** `base64` 0.22 only implements
+  `Error` for `DecodeError` under its `std` feature — no `core::error::Error`
+  impl for no_std — so thiserror's `#[from] base64::DecodeError` in
+  `SignatureError`/`KeyError` etc. fails to compile on the adapt path
+  (`as_dyn_error` not satisfied). FIX OPTIONS (bounded, non-trivial): migrate the
+  `base64_decode`/error paths to the no_std-native `base64ct` (already a dep) and
+  change those error variants to `base64ct::Error`; OR `[patch.crates-io]` a
+  base64 fork adding `#[cfg(not(feature="std"))] impl core::error::Error`. Also 2
+  trivial `use alloc::Vec/Box` spots (account/mod.rs:20, session/mod.rs:25) and
+  then the CRATE's own `#![no_std]` (Vec/String from alloc; ffi `catch_unwind` ->
+  `panic=abort` — already cfg'd). Watch for the same `core::error::Error` friction
+  on `ed25519_dalek::SignatureError`.
+  Verify: `cargo build --no-default-features` in vendor/vodozemac.
+- **D4-superseded — original one-line plan:** `#![no_std]` conversion of the vendored Olm path.
   FEASIBILITY CONFIRMED: the native pickle backend `serde_json` is `#![no_std]`
   with `alloc` (the make-or-break); `thiserror` 2.0 is no_std via
   `default-features = false`; `std::io` on the adapt path is ONLY the

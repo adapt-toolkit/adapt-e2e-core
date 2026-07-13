@@ -20,6 +20,9 @@ pub mod ratchet;
 mod receiver_chain;
 mod root_key;
 
+// ADAPT no_std alloc imports (std provides these in its prelude).
+#[cfg(not(feature = "std"))]
+use alloc::{boxed::Box, string::String, vec::Vec};
 use core::fmt::Debug;
 
 use aes::cipher::block_padding::Error as UnpadError;

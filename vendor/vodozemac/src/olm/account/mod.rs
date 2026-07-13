@@ -15,7 +15,10 @@
 mod fallback_keys;
 mod one_time_keys;
 
-use std::collections::HashMap;
+// ADAPT no_std alloc imports (std provides these in its prelude).
+#[cfg(not(feature = "std"))]
+use alloc::{borrow::ToOwned, boxed::Box, string::String, vec::Vec};
+use hashbrown::HashMap;
 
 #[cfg(feature = "std-rng")]
 use chacha20poly1305::{
@@ -688,6 +691,7 @@ impl Account {
 
     // This function is public for fuzzing, but should not be used by anything
     // else
+    #[cfg(feature = "std-rng")]
     #[doc(hidden)]
     pub fn from_decrypted_dehydrated_device(
         pickle: &[u8],
@@ -949,6 +953,7 @@ mod libolm {
     }
 }
 
+#[cfg(feature = "std-rng")]
 mod dehydrated_device {
     use matrix_pickle::{Decode, DecodeError, Encode, EncodeError};
     use zeroize::{Zeroize, ZeroizeOnDrop};

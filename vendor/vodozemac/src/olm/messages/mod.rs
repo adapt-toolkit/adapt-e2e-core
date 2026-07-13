@@ -17,6 +17,9 @@ mod pre_key;
 
 pub use message::Message;
 pub use pre_key::PreKeyMessage;
+// ADAPT no_std alloc imports (std provides these in its prelude).
+#[cfg(not(feature = "std"))]
+use alloc::{string::String, vec::Vec};
 use serde::{Deserialize, Serialize};
 
 use crate::{DecodeError, base64_decode, base64_encode};

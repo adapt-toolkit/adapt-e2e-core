@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ADAPT no_std alloc imports (std provides these in its prelude).
+#[cfg(not(feature = "std"))]
+use alloc::{string::String, vec::Vec};
 use core::fmt::Debug;
 
 use prost::Message as ProstMessage;

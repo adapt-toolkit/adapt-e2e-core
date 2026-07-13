@@ -15,6 +15,9 @@
 
 pub(crate) mod key;
 
+// ADAPT no_std alloc imports (std provides these in its prelude).
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
 use aes::{
     Aes256,
     cipher::{

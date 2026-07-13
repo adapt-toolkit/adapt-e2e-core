@@ -13,6 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ADAPT no_std alloc imports (std provides these in its prelude).
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
+#[cfg(feature = "libolm-compat")]
 use matrix_pickle::Decode;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -20,7 +24,8 @@ use sha2::{Digest, Sha256};
 use crate::{Curve25519PublicKey, utilities::base64_encode};
 
 /// The set of keys that were used to establish the Olm Session,
-#[derive(Clone, Copy, Deserialize, Serialize, PartialEq, Eq, Decode)]
+#[derive(Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
+#[cfg_attr(feature = "libolm-compat", derive(Decode))]
 pub struct SessionKeys {
     /// The long-term [`Curve25519PublicKey`] of the session initiator.
     pub identity_key: Curve25519PublicKey,

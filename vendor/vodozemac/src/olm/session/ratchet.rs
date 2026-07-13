@@ -14,6 +14,7 @@
 
 use core::fmt::Debug;
 
+#[cfg(feature = "libolm-compat")]
 use matrix_pickle::Decode;
 use rand_core::CryptoRng;
 use serde::{Deserialize, Serialize};
@@ -49,7 +50,8 @@ pub struct RatchetPublicKey(Curve25519PublicKey);
 ///
 /// See [`RatchetKey`] for explanation about ratchet keys in general. Since this
 /// is the other side's key, we have only the public part of the key.
-#[derive(Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize, Decode)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "libolm-compat", derive(Decode))]
 #[serde(transparent)]
 pub(super) struct RemoteRatchetKey(pub(super) Curve25519PublicKey);
 

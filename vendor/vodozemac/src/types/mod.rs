@@ -21,6 +21,9 @@ pub use ed25519::{
     Ed25519Keypair, Ed25519KeypairPickle, Ed25519PublicKey, Ed25519SecretKey, Ed25519Signature,
     SignatureError,
 };
+// ADAPT no_std alloc imports (std provides these in its prelude).
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 pub use x25519_dalek::SharedSecret;

@@ -12,9 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ADAPT no_std alloc imports (std provides these in its prelude).
+#[cfg(not(feature = "std"))]
+use alloc::{boxed::Box, string::String, vec::Vec};
 use core::fmt::Display;
 
 use base64::decoded_len_estimate;
+#[cfg(feature = "libolm-compat")]
 use matrix_pickle::{Decode, DecodeError};
 use rand_core::CryptoRng;
 #[cfg(feature = "std-rng")]
@@ -144,6 +148,7 @@ pub struct Curve25519PublicKey {
     pub(crate) inner: PublicKey,
 }
 
+#[cfg(feature = "libolm-compat")]
 impl Decode for Curve25519PublicKey {
     fn decode(reader: &mut impl std::io::Read) -> Result<Self, DecodeError> {
         let key = <[u8; 32]>::decode(reader)?;

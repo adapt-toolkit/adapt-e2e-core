@@ -14,6 +14,9 @@
 // limitations under the License.
 
 #[allow(deprecated)]
+// ADAPT no_std alloc imports (std provides these in its prelude).
+#[cfg(not(feature = "std"))]
+use alloc::boxed::Box;
 use aes::{
     Aes256,
     cipher::{Array, IvSizeUser, KeySizeUser},

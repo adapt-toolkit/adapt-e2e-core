@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// ADAPT no_std alloc imports (std provides these in its prelude).
+#[cfg(not(feature = "std"))]
+use alloc::boxed::Box;
 use hkdf::Hkdf;
 use rand_core::CryptoRng;
 use serde::{Deserialize, Serialize};

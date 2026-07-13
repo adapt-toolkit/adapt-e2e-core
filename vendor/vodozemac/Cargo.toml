@@ -37,15 +37,25 @@ unwrap_used = "deny"
 mem_forget = "deny"
 
 [features]
-default = ["libolm-compat", "precomputed-tables", "std-rng"]
+default = ["libolm-compat", "precomputed-tables", "std-rng", "std"]
 wasm_js = ["dep:getrandom", "getrandom/wasm_js"]
+# ADAPT fork (adapt-e2e-core): `std` gates the standard library. With `std` OFF
+# (`--no-default-features`) the crate is `#![no_std]` + `alloc` — the
+# injected-entropy Olm path for bare-metal targets (SPEC §6.3, §9). `alloc` is
+# always required and enabled directly on the dependencies below.
+std = [
+    "serde/std", "serde_json/std", "base64/std", "base64ct/std",
+    "serde_bytes/std", "prost/std", "thiserror/std",
+    "getrandom?/std", "rand?/std",
+]
 # ADAPT fork (adapt-e2e-core): gates the OS-RNG-backed default key-generation
 # methods and the non-Olm engines (SAS/ECIES/Megolm) plus dehydrated-device
 # support. With `std-rng` OFF (`--no-default-features`) the crate exposes only
 # the injected-entropy `*_with_rng` API and links NO `rand`/`getrandom`/`OsRng`
 # — the precondition for the RNG-isolation gate and the bare-metal target.
-std-rng = ["dep:rand", "dep:getrandom", "dep:chacha20poly1305"]
-libolm-compat = []
+std-rng = ["dep:rand", "dep:getrandom", "dep:chacha20poly1305", "std"]
+# libolm binary pickle support uses `matrix-pickle` (std::io); requires `std`.
+libolm-compat = ["dep:matrix-pickle", "std"]
 # Enables curve25519-dalek's precomputed basepoint tables, speeding up
 # fixed-base scalar multiplication (key generation and Ed25519 signing) at the
 # cost of embedding ~40 KB of lookup tables in the final binary.
@@ -57,30 +67,34 @@ experimental-session-config = []
 low-level-api = []
 
 [dependencies]
-aes = { version = "0.9.1" }
-cipher = { version = "0.5.2", features = ["alloc"] }
-arrayvec = { version = "0.7.8", features = ["serde"] }
-base64 = "0.22.1"
-base64ct = { version = "1.8.3", features = ["std", "alloc"] }
-cbc = { version = "0.2.1" }
+# All deps are `no_std`-capable; `std` is turned on via this crate's `std`
+# feature (ADAPT fork — SPEC §9).
+aes = { version = "0.9.1", default-features = false }
+cipher = { version = "0.5.2", default-features = false, features = ["alloc", "block-padding"] }
+arrayvec = { version = "0.7.8", default-features = false, features = ["serde"] }
+base64 = { version = "0.22.1", default-features = false, features = ["alloc"] }
+base64ct = { version = "1.8.3", default-features = false, features = ["alloc"] }
+cbc = { version = "0.2.1", default-features = false, features = ["alloc", "block-padding"] }
 chacha20poly1305 = { version = "0.11.0", optional = true }
-curve25519-dalek = { version = "5.0.0", default-features = false, features = ["zeroize"] }
-ed25519-dalek = { version = "3.0.0", default-features = false, features = ["rand_core", "serde", "hazmat", "zeroize"] }
+curve25519-dalek = { version = "5.0.0", default-features = false, features = ["zeroize", "alloc"] }
+ed25519-dalek = { version = "3.0.0", default-features = false, features = ["rand_core", "serde", "hazmat", "zeroize", "alloc"] }
 getrandom = { version = "0.4.3", optional = true }
-hkdf = "0.13.0"
-hmac = "0.13.0"
-matrix-pickle = { version = "0.2.2" }
-prost = "0.14.4"
+hashbrown = { version = "0.17.1", default-features = false, features = ["default-hasher", "inline-more"] }
+hkdf = { version = "0.13.0", default-features = false }
+hmac = { version = "0.13.0", default-features = false }
+# libolm binary pickle format (std::io); optional, pulled by `libolm-compat`.
+matrix-pickle = { version = "0.2.2", optional = true }
+prost = { version = "0.14.4", default-features = false, features = ["derive"] }
 rand = { version = "0.10.2", optional = true }
 # The `CryptoRng` trait for the injected-entropy `*_with_rng` API is always
 # required, independent of the OS-RNG `std-rng` feature (ADAPT fork).
 rand_core = { version = "0.10.1", default-features = false }
-serde = { version = "1.0.228", features = ["derive"] }
-serde_bytes = "0.11.19"
-serde_json = "1.0.150"
-sha2 = "0.11.0"
-subtle = "2.6.1"
-thiserror = "2.0.18"
+serde = { version = "1.0.228", default-features = false, features = ["derive", "alloc"] }
+serde_bytes = { version = "0.11.19", default-features = false, features = ["alloc"] }
+serde_json = { version = "1.0.150", default-features = false, features = ["alloc"] }
+sha2 = { version = "0.11.0", default-features = false }
+subtle = { version = "2.6.1", default-features = false }
+thiserror = { version = "2.0.18", default-features = false }
 x25519-dalek = { version = "3.0.0", default-features = false, features = ["serde", "reusable_secrets", "static_secrets", "zeroize"] }
 zeroize = { version = "1.9.0", features = ["derive"] }
 

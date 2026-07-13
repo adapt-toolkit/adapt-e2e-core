@@ -16,6 +16,9 @@
 mod libolm_compat;
 
 pub use base64::DecodeError;
+// ADAPT no_std alloc imports (std provides these in its prelude).
+#[cfg(not(feature = "std"))]
+use alloc::{string::String, vec::Vec};
 use base64::{
     Engine, alphabet,
     engine::{GeneralPurpose, general_purpose},

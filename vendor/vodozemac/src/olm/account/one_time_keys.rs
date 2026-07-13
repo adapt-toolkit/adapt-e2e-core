@@ -12,7 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::{BTreeMap, HashMap};
+// ADAPT no_std alloc imports (std provides these in its prelude).
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
+use alloc::collections::BTreeMap;
+
+use hashbrown::HashMap;
 
 use rand_core::CryptoRng;
 use serde::{Deserialize, Serialize};

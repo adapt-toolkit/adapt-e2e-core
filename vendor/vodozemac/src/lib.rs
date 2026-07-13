@@ -210,6 +210,12 @@
 //! ```
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
+// ADAPT fork: `no_std` + `alloc` on the adapt path (SPEC §9). `std` is a
+// default-on feature for the native build.
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[macro_use]
+extern crate alloc;
 
 mod cipher;
 mod types;
@@ -275,9 +281,11 @@ pub enum LibolmPickleError {
     #[error("The pickle didn't contain a valid Olm session")]
     InvalidSession,
     /// The payload of the pickle could not be decoded.
+    #[cfg(feature = "libolm-compat")]
     #[error(transparent)]
     Decode(#[from] matrix_pickle::DecodeError),
     /// The object could not be encoded as a pickle.
+    #[cfg(feature = "libolm-compat")]
     #[error(transparent)]
     Encode(#[from] matrix_pickle::EncodeError),
 }
