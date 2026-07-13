@@ -65,7 +65,10 @@ mod tests {
 
         // Load-back succeeds and yields a usable account.
         let acct = load(&a, &PK).unwrap();
-        assert_eq!(acct.curve25519_key(), load(&b, &PK).unwrap().curve25519_key());
+        assert_eq!(
+            acct.curve25519_key(),
+            load(&b, &PK).unwrap().curve25519_key()
+        );
     }
 
     #[test]

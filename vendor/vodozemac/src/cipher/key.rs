@@ -13,14 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[allow(deprecated)]
-// ADAPT no_std alloc imports (std provides these in its prelude).
-#[cfg(not(feature = "std"))]
-use alloc::boxed::Box;
 use aes::{
     Aes256,
     cipher::{Array, IvSizeUser, KeySizeUser},
 };
+#[allow(deprecated)]
+// ADAPT no_std alloc imports (std provides these in its prelude).
+#[cfg(not(feature = "std"))]
+use alloc::boxed::Box;
 use hkdf::Hkdf;
 use sha2::Sha256;
 use zeroize::{Zeroize, ZeroizeOnDrop};

@@ -16,8 +16,6 @@
 pub(crate) mod key;
 
 // ADAPT no_std alloc imports (std provides these in its prelude).
-#[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
 use aes::{
     Aes256,
     cipher::{
@@ -25,6 +23,8 @@ use aes::{
         block_padding::{Error as UnpadError, Pkcs7},
     },
 };
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
 use hmac::{Hmac, KeyInit as _, Mac as MacT, digest::MacError};
 use key::CipherKeys;
 use sha2::Sha256;

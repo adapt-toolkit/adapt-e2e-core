@@ -13,9 +13,9 @@
 // limitations under the License.
 
 // ADAPT no_std alloc imports (std provides these in its prelude).
+use alloc::collections::BTreeMap;
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
-use alloc::collections::BTreeMap;
 
 use hashbrown::HashMap;
 

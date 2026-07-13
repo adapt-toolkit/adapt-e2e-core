@@ -73,7 +73,10 @@ pub fn outbound(
         )
         .map_err(|_| Error::SessionMismatch)?;
 
-    Ok((store_session(&session, pickle_key), account::store(&account, pickle_key)))
+    Ok((
+        store_session(&session, pickle_key),
+        account::store(&account, pickle_key),
+    ))
 }
 
 /// SPEC fn 6 — establish an inbound session from a peer's pre-key message,
@@ -132,7 +135,8 @@ pub fn decrypt(
     // Reject an out-of-range message type before touching the ciphertext.
     let _ = MessageType::try_from(msg_type as usize).map_err(|_| Error::DecryptFailed)?;
     let mut session = load_session(sess_pickle, pickle_key)?;
-    let olm = OlmMessage::from_parts(msg_type as usize, message).map_err(|_| Error::DecryptFailed)?;
+    let olm =
+        OlmMessage::from_parts(msg_type as usize, message).map_err(|_| Error::DecryptFailed)?;
     let plaintext = session.decrypt(&olm).map_err(|_| Error::DecryptFailed)?;
 
     Ok((plaintext, store_session(&session, pickle_key)))
@@ -173,12 +177,20 @@ mod tests {
         let bob = account::create(&[2u8; 32], &PK).unwrap();
         let bob = account::gen_otks(&bob, 1, &[3u8; 32], &PK).unwrap();
         let bob_acct = account::load(&bob, &PK).unwrap();
-        let otk = *bob_acct.one_time_keys().values().next().expect("one otk").as_bytes();
+        let otk = *bob_acct
+            .one_time_keys()
+            .values()
+            .next()
+            .expect("one otk")
+            .as_bytes();
         (alice, bob, otk)
     }
 
     fn ik_of(acct_pickle: &[u8]) -> [u8; 32] {
-        *account::load(acct_pickle, &PK).unwrap().curve25519_key().as_bytes()
+        *account::load(acct_pickle, &PK)
+            .unwrap()
+            .curve25519_key()
+            .as_bytes()
     }
 
     #[test]
@@ -197,8 +209,7 @@ mod tests {
         let ik_a = ik_of(&alice);
 
         let run = || {
-            let (alice_sess, _alice_acct) =
-                outbound(&alice, &ik_b, &otk, &[4u8; 32], &PK).unwrap();
+            let (alice_sess, _alice_acct) = outbound(&alice, &ik_b, &otk, &[4u8; 32], &PK).unwrap();
             let enc = encrypt(&alice_sess, b"hello bob", &[5u8; 32], &PK).unwrap();
 
             let inb = inbound(&bob, &ik_a, &enc.message, &PK).unwrap();
@@ -209,7 +220,11 @@ mod tests {
         let (m1, t1, _) = run();
         let (m2, t2, _) = run();
         assert_eq!(t1, MessageType::PreKey as u32);
-        assert_eq!((m1, t1), (m2, t2), "byte-identical prekey message for identical seeds");
+        assert_eq!(
+            (m1, t1),
+            (m2, t2),
+            "byte-identical prekey message for identical seeds"
+        );
     }
 
     #[test]
@@ -224,12 +239,14 @@ mod tests {
 
         // Bob replies; Alice decrypts.
         let reply = encrypt(&inb.session, b"hey back", &[6u8; 32], &PK).unwrap();
-        let (pt, _alice_sess2) =
-            decrypt(&alice_sess, reply.msg_type, &reply.message, &PK).unwrap();
+        let (pt, _alice_sess2) = decrypt(&alice_sess, reply.msg_type, &reply.message, &PK).unwrap();
         assert_eq!(pt, b"hey back");
 
         // Both ends agree on the session id.
-        assert_eq!(session_id(&alice_sess, &PK).unwrap(), session_id(&inb.session, &PK).unwrap());
+        assert_eq!(
+            session_id(&alice_sess, &PK).unwrap(),
+            session_id(&inb.session, &PK).unwrap()
+        );
     }
 
     #[test]
@@ -253,12 +270,21 @@ mod tests {
         assert!(!matches_inbound(&inb.session, &enc2.message, &PK).unwrap());
     }
 
-    fn parties_with(a_seed: &[u8; 32], b_seed: &[u8; 32], otk_seed: &[u8; 32]) -> (Vec<u8>, Vec<u8>, [u8; 32]) {
+    fn parties_with(
+        a_seed: &[u8; 32],
+        b_seed: &[u8; 32],
+        otk_seed: &[u8; 32],
+    ) -> (Vec<u8>, Vec<u8>, [u8; 32]) {
         let alice = account::create(a_seed, &PK).unwrap();
         let bob = account::create(b_seed, &PK).unwrap();
         let bob = account::gen_otks(&bob, 1, otk_seed, &PK).unwrap();
         let bob_acct = account::load(&bob, &PK).unwrap();
-        let otk = *bob_acct.one_time_keys().values().next().expect("one otk").as_bytes();
+        let otk = *bob_acct
+            .one_time_keys()
+            .values()
+            .next()
+            .expect("one otk")
+            .as_bytes();
         (alice, bob, otk)
     }
 }

@@ -11,9 +11,9 @@
 //!               || kind(u8: 1=acct, 2=sess) || vodozemac_pickle_string_bytes
 //! ```
 
+use crate::mgmt::error::{Error, Result};
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
-use crate::mgmt::error::{Error, Result};
 
 const MAGIC: [u8; 4] = *b"AE2C";
 const FMT_VER: u8 = 1;

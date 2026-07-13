@@ -21,7 +21,11 @@ fn generate_header() {
     };
     let out = std::path::Path::new(&crate_dir).join("include/adapt_e2e_core.h");
     let config = cbindgen::Config::from_root_or_default(&crate_dir);
-    match cbindgen::Builder::new().with_crate(&crate_dir).with_config(config).generate() {
+    match cbindgen::Builder::new()
+        .with_crate(&crate_dir)
+        .with_config(config)
+        .generate()
+    {
         Ok(bindings) => {
             let _ = std::fs::create_dir_all(std::path::Path::new(&crate_dir).join("include"));
             bindings.write_to_file(&out);

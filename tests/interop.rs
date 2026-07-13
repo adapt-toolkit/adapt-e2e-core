@@ -20,7 +20,9 @@ use vodozemac_upstream::olm::{
 const PK: [u8; 32] = [0x5A; 32];
 
 fn ik(pickle: &[u8]) -> [u8; 32] {
-    bundle::bundle(pickle, &PK).unwrap()[0..32].try_into().unwrap()
+    bundle::bundle(pickle, &PK).unwrap()[0..32]
+        .try_into()
+        .unwrap()
 }
 fn first_otk(pickle: &[u8]) -> [u8; 32] {
     let b = bundle::bundle(pickle, &PK).unwrap();
@@ -52,22 +54,40 @@ fn our_fork_outbound_is_read_by_upstream() {
     // Upstream Bob decrypts our fork's pre-key message.
     let prekey = UpPreKey::from_bytes(&e.message).expect("parse prekey");
     let result = bob
-        .create_inbound_session(UpConfig::version_1(), UpCurve::from_bytes(alice_ik), &prekey)
+        .create_inbound_session(
+            UpConfig::version_1(),
+            UpCurve::from_bytes(alice_ik),
+            &prekey,
+        )
         .expect("upstream inbound");
-    assert_eq!(result.plaintext, b"hello upstream", "upstream must read our fork's ciphertext");
+    assert_eq!(
+        result.plaintext, b"hello upstream",
+        "upstream must read our fork's ciphertext"
+    );
 
     // And the reply direction: upstream Bob replies, our fork Alice decrypts.
     let mut bob_sess = result.session;
-    let reply = bob_sess.encrypt("hi from upstream").expect("upstream encrypt");
+    let reply = bob_sess
+        .encrypt("hi from upstream")
+        .expect("upstream encrypt");
     let (rtype, rbody) = reply.to_parts();
     let (pt, _) = session::decrypt(&alice_sess, rtype as u32, &rbody, &PK).unwrap();
-    assert_eq!(pt, b"hi from upstream", "our fork must read upstream's ciphertext");
+    assert_eq!(
+        pt, b"hi from upstream",
+        "our fork must read upstream's ciphertext"
+    );
 }
 
 #[test]
 fn upstream_outbound_is_read_by_our_fork() {
     // Our seed-injected Bob publishes keys.
-    let bob = account::gen_otks(&account::create(&[2u8; 32], &PK).unwrap(), 1, &[3u8; 32], &PK).unwrap();
+    let bob = account::gen_otks(
+        &account::create(&[2u8; 32], &PK).unwrap(),
+        1,
+        &[3u8; 32],
+        &PK,
+    )
+    .unwrap();
     let bob_ik = ik(&bob);
     let bob_otk = first_otk(&bob);
 
@@ -86,12 +106,16 @@ fn upstream_outbound_is_read_by_our_fork() {
 
     // Our fork Bob establishes the inbound session and recovers the plaintext.
     let inb = session::inbound(&bob, alice_ik.as_bytes(), &body, &PK).unwrap();
-    assert_eq!(inb.plaintext, b"hello fork", "our fork must read upstream's pre-key message");
+    assert_eq!(
+        inb.plaintext, b"hello fork",
+        "our fork must read upstream's pre-key message"
+    );
 
     // Reply: our fork Bob replies, upstream Alice decrypts.
     let reply = session::encrypt(&inb.session, b"reply from fork", &[7u8; 32], &PK).unwrap();
-    let up_msg = vodozemac_upstream::olm::OlmMessage::from_parts(reply.msg_type as usize, &reply.message)
-        .expect("parse our message upstream");
+    let up_msg =
+        vodozemac_upstream::olm::OlmMessage::from_parts(reply.msg_type as usize, &reply.message)
+            .expect("parse our message upstream");
     let pt = alice_sess.decrypt(&up_msg).expect("upstream decrypt");
     assert_eq!(pt, b"reply from fork");
 }

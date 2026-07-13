@@ -55,7 +55,10 @@ fn full_outbound_flow_is_byte_identical_under_the_same_seeds() {
     let (id2, ct2) = run();
 
     assert_eq!(id1, id2, "session id must be reproducible");
-    assert_eq!(ct1, ct2, "ciphertext must be byte-identical for identical seeds");
+    assert_eq!(
+        ct1, ct2,
+        "ciphertext must be byte-identical for identical seeds"
+    );
 }
 
 #[test]
@@ -63,7 +66,11 @@ fn seeded_session_interoperates_with_a_default_peer() {
     // A seed-driven Alice must be decryptable by an OsRng-built Bob: the seam is
     // behaviour-preserving, not a separate protocol.
     let mut bob = Account::new();
-    let bob_otk = *bob.generate_one_time_keys(1).created.first().expect("one OTK");
+    let bob_otk = *bob
+        .generate_one_time_keys(1)
+        .created
+        .first()
+        .expect("one OTK");
 
     let alice = Account::new_with_rng(SeededRng::from_seed([9u8; 32]).rng());
     let mut alice_session = alice
@@ -78,7 +85,9 @@ fn seeded_session_interoperates_with_a_default_peer() {
     let msg = alice_session
         .encrypt_with_rng("hello", SeededRng::from_seed([11u8; 32]).rng())
         .expect("encrypt");
-    let OlmMessage::PreKey(prekey) = msg else { panic!("expected pre-key message") };
+    let OlmMessage::PreKey(prekey) = msg else {
+        panic!("expected pre-key message")
+    };
 
     let result = bob
         .create_inbound_session(SessionConfig::version_1(), alice.curve25519_key(), &prekey)

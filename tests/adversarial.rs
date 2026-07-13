@@ -39,7 +39,8 @@ fn first_otk(pickle: &[u8]) -> [u8; 32] {
 fn established() -> (Vec<u8>, Vec<u8>) {
     let alice = acct(1);
     let bob = with_otks(&acct(2), 2, 3);
-    let (alice_sess, _) = session::outbound(&alice, &ik(&bob), &first_otk(&bob), &[4; 32], &PK).unwrap();
+    let (alice_sess, _) =
+        session::outbound(&alice, &ik(&bob), &first_otk(&bob), &[4; 32], &PK).unwrap();
     let e0 = session::encrypt(&alice_sess, b"establish", &[5; 32], &PK).unwrap();
     let inb = session::inbound(&bob, &ik(&alice), &e0.message, &PK).unwrap();
     assert_eq!(inb.plaintext, b"establish");
@@ -76,7 +77,10 @@ fn determinism_golden_dh_advance_is_stable() {
     // pre-key golden does not cover this seam.
     let m = alice_advancing_message(40);
     let hex: String = m.iter().map(|b| format!("{b:02x}")).collect();
-    assert_eq!(hex, GOLDEN_DH_ADVANCE_HEX, "DH-advance determinism golden drifted");
+    assert_eq!(
+        hex, GOLDEN_DH_ADVANCE_HEX,
+        "DH-advance determinism golden drifted"
+    );
 }
 
 const GOLDEN_DH_ADVANCE_HEX: &str = "030a20b2678df336ebede372ec359b26400701a83de822273499dd23da0ccfcb86872b100022109882071d900ccbfd8d095fd059a4deca769c230da415162f";
@@ -88,7 +92,10 @@ fn replay_same_seed_same_session_is_byte_identical() {
     let (alice_sess, _bob) = established();
     let a = session::encrypt(&alice_sess, b"x", &[9; 32], &PK).unwrap();
     let b = session::encrypt(&alice_sess, b"x", &[9; 32], &PK).unwrap();
-    assert_eq!(a.message, b.message, "replay: identical (state,seed,pt) => identical ciphertext");
+    assert_eq!(
+        a.message, b.message,
+        "replay: identical (state,seed,pt) => identical ciphertext"
+    );
     assert_eq!(a.session, b.session);
 }
 
@@ -98,22 +105,31 @@ fn replay_same_seed_same_session_is_byte_identical() {
 fn alice_advancing_message(adv_seed: u8) -> Vec<u8> {
     let (alice_sess, bob_sess) = established();
     let reply = session::encrypt(&bob_sess, b"reply", &[7; 32], &PK).unwrap();
-    let (_pt, alice_after) = session::decrypt(&alice_sess, reply.msg_type, &reply.message, &PK).unwrap();
+    let (_pt, alice_after) =
+        session::decrypt(&alice_sess, reply.msg_type, &reply.message, &PK).unwrap();
     // This encrypt advances the DH ratchet and consumes adv_seed.
-    session::encrypt(&alice_after, b"advance", &[adv_seed; 32], &PK).unwrap().message
+    session::encrypt(&alice_after, b"advance", &[adv_seed; 32], &PK)
+        .unwrap()
+        .message
 }
 
 #[test]
 fn retry_two_new_dh_steps_diverge_under_fresh_seeds() {
     let m_fresh_a = alice_advancing_message(40);
     let m_fresh_b = alice_advancing_message(41);
-    assert_ne!(m_fresh_a, m_fresh_b, "distinct seeds => distinct ephemeral ratchet key");
+    assert_ne!(
+        m_fresh_a, m_fresh_b,
+        "distinct seeds => distinct ephemeral ratchet key"
+    );
 
     // Reusing the SAME seed across two distinct advancing steps collapses to the
     // identical ephemeral — the failure mode is REACHABLE, proving the host's
     // fresh-seed-per-new-DH-step obligation is necessary (SPEC §5.3).
     let m_reuse_a = alice_advancing_message(40);
-    assert_eq!(m_fresh_a, m_reuse_a, "same seed on a new DH step => reused ephemeral (detectable)");
+    assert_eq!(
+        m_fresh_a, m_reuse_a,
+        "same seed on a new DH step => reused ephemeral (detectable)"
+    );
 }
 
 // --- SPEC §7 skipped-message-key store -------------------------------------
@@ -148,7 +164,10 @@ fn tampered_ciphertext_fails_cleanly() {
     tampered[last] ^= 0x01; // flip a bit -> MAC must reject
 
     let res = session::decrypt(&bob_sess, e.msg_type, &tampered, &PK);
-    assert!(res.is_err(), "tampered ciphertext must fail the MAC, not decrypt");
+    assert!(
+        res.is_err(),
+        "tampered ciphertext must fail the MAC, not decrypt"
+    );
 }
 
 // --- SPEC §7.8 NEGATIVE forward secrecy (the keystone) ---------------------
@@ -186,7 +205,10 @@ fn beyond_max_message_gap_is_rejected() {
 
     // Bob has only seen the establish message; jumping ~2100 ahead exceeds the gap.
     let res = session::decrypt(&bob_sess, last.msg_type, &last.message, &PK);
-    assert!(res.is_err(), "a gap beyond MAX_MESSAGE_GAP must be rejected");
+    assert!(
+        res.is_err(),
+        "a gap beyond MAX_MESSAGE_GAP must be rejected"
+    );
 }
 
 #[test]

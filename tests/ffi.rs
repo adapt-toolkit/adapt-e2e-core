@@ -25,14 +25,23 @@ fn one_out(f: impl Fn(*mut u8, *mut usize) -> i32) -> (i32, Vec<u8>) {
 }
 
 fn create(seed: [u8; 32]) -> Vec<u8> {
-    let (rc, blob) = one_out(|p, l| unsafe { e2e_account_create(seed.as_ptr(), PK.as_ptr(), p, l) });
+    let (rc, blob) =
+        one_out(|p, l| unsafe { e2e_account_create(seed.as_ptr(), PK.as_ptr(), p, l) });
     assert_eq!(rc, RC_OK);
     blob
 }
 
 fn gen_otks(pickle: &[u8], n: u32, seed: [u8; 32]) -> Vec<u8> {
     let (rc, blob) = one_out(|p, l| unsafe {
-        e2e_account_gen_otks(pickle.as_ptr(), pickle.len(), n, seed.as_ptr(), PK.as_ptr(), p, l)
+        e2e_account_gen_otks(
+            pickle.as_ptr(),
+            pickle.len(),
+            n,
+            seed.as_ptr(),
+            PK.as_ptr(),
+            p,
+            l,
+        )
     });
     assert_eq!(rc, RC_OK);
     blob
@@ -162,7 +171,12 @@ fn full_handshake_over_the_c_abi() {
     let mut id_b = [0u8; 32];
     assert_eq!(
         unsafe {
-            e2e_session_id(alice_sess.as_ptr(), alice_sess.len(), PK.as_ptr(), id_a.as_mut_ptr())
+            e2e_session_id(
+                alice_sess.as_ptr(),
+                alice_sess.len(),
+                PK.as_ptr(),
+                id_a.as_mut_ptr(),
+            )
         },
         RC_OK
     );
@@ -255,7 +269,15 @@ fn malformed_and_null_inputs_never_panic() {
     // Garbage account pickle -> clean negative rc (Version/BadPickle), no panic.
     let garbage = [0xFFu8; 200];
     let (rc, _) = one_out(|p, l| unsafe {
-        e2e_account_gen_otks(garbage.as_ptr(), garbage.len(), 1, [0u8; 32].as_ptr(), PK.as_ptr(), p, l)
+        e2e_account_gen_otks(
+            garbage.as_ptr(),
+            garbage.len(),
+            1,
+            [0u8; 32].as_ptr(),
+            PK.as_ptr(),
+            p,
+            l,
+        )
     });
     assert!(rc < 0, "garbage pickle must fail cleanly, got {rc}");
 
@@ -264,8 +286,16 @@ fn malformed_and_null_inputs_never_panic() {
     let mut corrupt = acct.clone();
     let n = corrupt.len();
     corrupt[n - 1] ^= 0xFF; // flip a byte in the encrypted pickle body
-    let (rc, _) =
-        one_out(|p, l| unsafe { e2e_account_gen_fallback(corrupt.as_ptr(), corrupt.len(), [0u8; 32].as_ptr(), PK.as_ptr(), p, l) });
+    let (rc, _) = one_out(|p, l| unsafe {
+        e2e_account_gen_fallback(
+            corrupt.as_ptr(),
+            corrupt.len(),
+            [0u8; 32].as_ptr(),
+            PK.as_ptr(),
+            p,
+            l,
+        )
+    });
     assert_eq!(rc, RC_BAD_PICKLE);
 
     // NULL seed -> NullArg.
@@ -284,8 +314,16 @@ fn malformed_and_null_inputs_never_panic() {
     let mut al = acct.len();
     let rc = unsafe {
         e2e_session_outbound(
-            alice.as_ptr(), alice.len(), ik_b.as_ptr(), otk_b.as_ptr(), [4u8; 32].as_ptr(),
-            PK.as_ptr(), sess.as_mut_ptr(), &mut sl, acct.as_mut_ptr(), &mut al,
+            alice.as_ptr(),
+            alice.len(),
+            ik_b.as_ptr(),
+            otk_b.as_ptr(),
+            [4u8; 32].as_ptr(),
+            PK.as_ptr(),
+            sess.as_mut_ptr(),
+            &mut sl,
+            acct.as_mut_ptr(),
+            &mut al,
         )
     };
     assert_eq!(rc, RC_OK);
@@ -296,7 +334,18 @@ fn malformed_and_null_inputs_never_panic() {
         let mut s2 = vec![0u8; 16384];
         let mut s2l = s2.len();
         unsafe {
-            e2e_decrypt(sess.as_ptr(), sess.len(), 1, junk.as_ptr(), junk.len(), PK.as_ptr(), p, l, s2.as_mut_ptr(), &mut s2l)
+            e2e_decrypt(
+                sess.as_ptr(),
+                sess.len(),
+                1,
+                junk.as_ptr(),
+                junk.len(),
+                PK.as_ptr(),
+                p,
+                l,
+                s2.as_mut_ptr(),
+                &mut s2l,
+            )
         }
     });
     assert!(rc < 0, "decrypting junk must fail cleanly, got {rc}");

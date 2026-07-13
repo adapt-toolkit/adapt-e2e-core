@@ -120,8 +120,7 @@ fn with_rng_session_interoperates_with_default_account() {
     // Bob is built with the default (OsRng) path; Alice uses the `_with_rng`
     // path. If the seam is behaviour-preserving they must be able to talk.
     let mut bob = Account::new();
-    let bob_otk =
-        *bob.generate_one_time_keys(1).created.first().expect("one OTK");
+    let bob_otk = *bob.generate_one_time_keys(1).created.first().expect("one OTK");
 
     let alice = Account::new_with_rng(&mut seeded(20));
     let mut alice_session = alice
@@ -157,11 +156,8 @@ fn with_rng_session_interoperates_with_default_account() {
 #[allow(clippy::expect_used, clippy::panic)]
 fn alice_ready_to_advance() -> Session {
     let mut bob = Account::new_with_rng(&mut seeded(30));
-    let bob_otk = *bob
-        .generate_one_time_keys_with_rng(1, &mut seeded(31))
-        .created
-        .first()
-        .expect("one OTK");
+    let bob_otk =
+        *bob.generate_one_time_keys_with_rng(1, &mut seeded(31)).created.first().expect("one OTK");
 
     let alice = Account::new_with_rng(&mut seeded(32));
     let mut alice_session = alice

@@ -23,9 +23,9 @@ use curve25519_dalek::EdwardsPoint;
 use ed25519_dalek::{
     PUBLIC_KEY_LENGTH, SIGNATURE_LENGTH, Signature, Signer, SigningKey, VerifyingKey,
 };
-use rand_core::CryptoRng;
 #[cfg(feature = "std-rng")]
 use rand::rng;
+use rand_core::CryptoRng;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_bytes::{ByteBuf as SerdeByteBuf, Bytes as SerdeBytes};
 use sha2::Sha512;

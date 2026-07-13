@@ -20,9 +20,9 @@ use core::fmt::Display;
 use base64::decoded_len_estimate;
 #[cfg(feature = "libolm-compat")]
 use matrix_pickle::{Decode, DecodeError};
-use rand_core::CryptoRng;
 #[cfg(feature = "std-rng")]
 use rand::rng;
+use rand_core::CryptoRng;
 use serde::{Deserialize, Serialize};
 use x25519_dalek::{EphemeralSecret, PublicKey, ReusableSecret, SharedSecret, StaticSecret};
 use zeroize::Zeroize;
