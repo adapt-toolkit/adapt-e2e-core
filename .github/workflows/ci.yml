@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main, crate-bootstrap]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Native: build, the full adversarial test suite, lints, and the committed
+  # C header staying in sync.
+  native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - run: cargo fmt --all --check
+      - run: cargo clippy --all-targets --all-features
+      - run: cargo test
+      # cbindgen header must be regenerated and unchanged (committed in sync).
+      - run: cargo build --features generate-header
+      - run: git diff --exit-code -- include/adapt_e2e_core.h
+
+  # The RNG-isolation gate (SPEC §7.7): the shipped library links no
+  # getrandom/OsRng/thread_rng — the crate is a pure function of its seed.
+  rng-isolation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: ./scripts/rng_isolation_gate.sh
+
+  # no_std + rv32 bare-metal (SPEC §6.3, §9): the crate builds for
+  # riscv32imac-unknown-none-elf with -Zbuild-std, no OS, no getrandom.
+  rv32-baremetal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+      - run: ./scripts/rv32_baremetal_build.sh
+
+  # miri: UB / aliasing at the FFI marshalling. The RustCrypto cbc/aes pickle
+  # path requires the Tree Borrows model (see docs/TESTING.md).
+  miri:
+    runs-on: ubuntu-latest
+    env:
+      MIRIFLAGS: -Zmiri-tree-borrows
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri
+      - run: cargo miri test --test ffi
+
+  # Property-based + (bounded) fuzz over the C-ABI boundary (SPEC §7.6).
+  fuzz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --test proptest_abi
+      # A bounded cargo-fuzz budget per PR runs once the fuzz/ targets land (M5).
