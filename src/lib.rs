@@ -19,5 +19,6 @@
 //! management layer, C-ABI (`ffi`), pickle envelope, and adversarial test suite
 //! land in subsequent milestones.
 
+pub mod ffi;
 pub mod mgmt;
 pub mod seeded_rng;

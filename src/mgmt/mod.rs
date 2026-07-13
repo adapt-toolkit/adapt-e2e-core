@@ -6,6 +6,7 @@
 //! two-call length convention live in [`crate::ffi`].
 
 pub mod account;
+pub mod bundle;
 pub mod error;
 pub mod pickle;
 pub mod session;
