@@ -170,6 +170,26 @@ fn consumed_in_order_key_is_not_retained() {
 }
 
 #[test]
+fn beyond_max_message_gap_is_rejected() {
+    // Skipping more than MAX_MESSAGE_GAP (2000) messages must be refused cleanly
+    // (TooBigMessageGap -> DecryptFailed), not accepted or panicked.
+    let (alice_sess, bob_sess) = established();
+
+    let mut sess = alice_sess;
+    let mut last = None;
+    for i in 0..2100u32 {
+        let e = session::encrypt(&sess, format!("m{i}").as_bytes(), &[70; 32], &PK).unwrap();
+        sess = e.session.clone();
+        last = Some(e);
+    }
+    let last = last.unwrap();
+
+    // Bob has only seen the establish message; jumping ~2100 ahead exceeds the gap.
+    let res = session::decrypt(&bob_sess, last.msg_type, &last.message, &PK);
+    assert!(res.is_err(), "a gap beyond MAX_MESSAGE_GAP must be rejected");
+}
+
+#[test]
 fn negative_forward_secrecy_evicted_vs_retained() {
     // The rigorous keystone: distinguish an EVICTED key (forward-secret; gone
     // from the current pickle) from a RETAINED skipped key (recoverable from the

@@ -38,3 +38,6 @@ rand = { version = "0.10", default-features = false, features = ["std_rng"] }
 # (SPEC §7.2): our seed-injected fork must be wire-compatible with it. Renamed to
 # avoid colliding with the vendored `vodozemac` path dependency.
 vodozemac_upstream = { package = "vodozemac", version = "0.10.0" }
+# Property-based fuzzing of the C-ABI boundary (SPEC §7.6): malformed input must
+# never panic, always a clean error.
+proptest = "1"

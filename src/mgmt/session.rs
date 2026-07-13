@@ -144,6 +144,20 @@ pub fn session_id(sess_pickle: &[u8], pickle_key: &[u8; 32]) -> Result<[u8; 32]>
     raw.as_slice().try_into().map_err(|_| Error::Internal)
 }
 
+/// SPEC fn 9b — does `sess_pickle` correspond to the session that `prekey_msg`
+/// would establish? Used for idempotent PRE_KEY re-delivery detection: a
+/// re-delivered pre-key message shares the session id of the session it created,
+/// so the consumer can skip creating a duplicate inbound session.
+pub fn matches_inbound(
+    sess_pickle: &[u8],
+    prekey_msg: &[u8],
+    pickle_key: &[u8; 32],
+) -> Result<bool> {
+    let session = load_session(sess_pickle, pickle_key)?;
+    let prekey = PreKeyMessage::from_bytes(prekey_msg).map_err(|_| Error::BadPickle)?;
+    Ok(session.session_id() == prekey.session_id())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -214,5 +228,35 @@ mod tests {
 
         // Both ends agree on the session id.
         assert_eq!(session_id(&alice_sess, &PK).unwrap(), session_id(&inb.session, &PK).unwrap());
+    }
+
+    #[test]
+    fn matches_inbound_detects_redelivery() {
+        let (alice, bob, otk) = parties();
+        let ik_b = ik_of(&bob);
+        let ik_a = ik_of(&alice);
+
+        let (alice_sess, _) = outbound(&alice, &ik_b, &otk, &[4u8; 32], &PK).unwrap();
+        let enc = encrypt(&alice_sess, b"hi", &[5u8; 32], &PK).unwrap();
+        let inb = inbound(&bob, &ik_a, &enc.message, &PK).unwrap();
+
+        // Bob's session matches the pre-key message that created it.
+        assert!(matches_inbound(&inb.session, &enc.message, &PK).unwrap());
+
+        // A pre-key message for a different session does not match.
+        let (alice2, bob2, otk2) = parties_with(&[8u8; 32], &[9u8; 32], &[10u8; 32]);
+        let _ = (bob2,);
+        let (alice2_sess, _) = outbound(&alice2, &ik_b, &otk2, &[11u8; 32], &PK).unwrap();
+        let enc2 = encrypt(&alice2_sess, b"other", &[12u8; 32], &PK).unwrap();
+        assert!(!matches_inbound(&inb.session, &enc2.message, &PK).unwrap());
+    }
+
+    fn parties_with(a_seed: &[u8; 32], b_seed: &[u8; 32], otk_seed: &[u8; 32]) -> (Vec<u8>, Vec<u8>, [u8; 32]) {
+        let alice = account::create(a_seed, &PK).unwrap();
+        let bob = account::create(b_seed, &PK).unwrap();
+        let bob = account::gen_otks(&bob, 1, otk_seed, &PK).unwrap();
+        let bob_acct = account::load(&bob, &PK).unwrap();
+        let otk = *bob_acct.one_time_keys().values().next().expect("one otk").as_bytes();
+        (alice, bob, otk)
     }
 }

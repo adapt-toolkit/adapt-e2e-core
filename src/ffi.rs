@@ -347,3 +347,31 @@ pub unsafe extern "C" fn e2e_session_id(
         Ok(())
     })
 }
+
+/// SPEC fn 9b — write 1 into `*out_bool` if the session pickle corresponds to the
+/// session the pre-key message would establish (idempotent re-delivery
+/// detection), else 0.
+///
+/// # Safety
+/// All non-NULL pointers must be valid; `out_bool` must be a valid `*mut u32`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn e2e_matches_inbound(
+    in_pickle: *const u8,
+    in_pickle_len: usize,
+    prekey_msg: *const u8,
+    prekey_msg_len: usize,
+    pickle_key: *const u8,
+    out_bool: *mut u32,
+) -> i32 {
+    guard(|| {
+        let in_pickle = unsafe { in_slice(in_pickle, in_pickle_len) }?;
+        let msg = unsafe { in_slice(prekey_msg, prekey_msg_len) }?;
+        let pk = unsafe { in_arr32(pickle_key) }?;
+        if out_bool.is_null() {
+            return Err(Error::NullArg);
+        }
+        let matches = session::matches_inbound(in_pickle, msg, &pk)?;
+        unsafe { *out_bool = u32::from(matches) };
+        Ok(())
+    })
+}
