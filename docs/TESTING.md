@@ -15,6 +15,8 @@ to run each gate. Everything below runs green today except where marked pending.
 | Adversarial | `tests/adversarial.rs` | determinism goldens (pre-key **and** DH-advance, byte-pinned); retry-vs-replay entropy guard; skipped-key out-of-order + 40-key bound + beyond-2000-gap rejection; tampered-ciphertext rejection; **negative forward secrecy** (evicted vs retained). |
 | Interop oracle | `tests/interop.rs` | our seed-injected fork is wire-compatible with the **real upstream vodozemac 0.10.0** (crates.io), both handshake directions — the independent behaviour-preservation check. |
 | Property fuzz | `tests/proptest_abi.rs` | arbitrary bytes to the C-ABI never panic (no `PANIC=-99`), always a clean error; `e2e_account_create` is total + deterministic over the whole input space. |
+| Golden vectors | `tests/golden_vectors.rs` | byte-pins every keygen seam (identity Curve25519 + Ed25519, one-time key, fallback key, session id) from fixed seeds — cross-build determinism regression guard. |
+| libFuzzer | `fuzz/` (SPEC §7.6) | coverage-guided libFuzzer over the C-ABI (needs `cargo-fuzz`; CI runs a bounded budget). Same no-crash invariant as the proptest suite. See `fuzz/README.md`. |
 | Seam smoke | `tests/seam_smoke.rs` | the crate drives the vendored fork's `*_with_rng` seam deterministically. |
 
 Run everything: `cargo test`. Lint gate: `cargo clippy --all-targets`.
@@ -48,15 +50,15 @@ crypto path is tracked upstream in the `cbc`/`cipher` crates.
 
 ## Pending (tracked for later milestones)
 
-- **cargo-fuzz** targets over the `#[no_mangle]` fns with ASan/UBSan + a committed
-  corpus (SPEC §7.6) — proptest covers the property today; libFuzzer coverage is
-  a CI addition (M5).
-- **Committed KAT vectors** under `tests/vectors/` (SPEC §7.1) — behaviour
-  preservation is currently proven by the live interop oracle; static Signal/Olm
-  vectors are additive.
-- **Coverage gate** ≥95% line on `ffi`/`mgmt`/`seeded_rng` (SPEC §7.10) — M5 CI.
-- **Constant-time smoke** (`dudect`-style) on decrypt/MAC (SPEC §7.9) — posture
-  guard; the constant-time ops are inherited from vodozemac/dalek.
+- **Coverage gate** ≥95% line on `ffi`/`mgmt`/`seeded_rng` (SPEC §7.10) — needs
+  `cargo-llvm-cov` (not installed here); a CI addition.
+- **Constant-time posture** (SPEC §7.9) — the constant-time scalar/compare ops are
+  inherited from `curve25519-dalek`/`subtle` (decrypt MAC-compare, X25519). The
+  management layer adds no data-dependent branches on secret material: `decrypt`
+  returns every failure via the same `DecryptFailed` path (no early
+  secret-dependent return), and pickle AEAD/MAC is vodozemac's. This is a posture
+  statement + regression guard, not a formal CT proof; a `dudect`-style timing
+  harness is a future CI addition.
 - **wasm-emscripten lane** (SPEC §6.2) — DEFERRED (owner): needs the consumer's
   emsdk/emcc (ABI-pinned). The crate is no_std-clean, so it builds consumer-side
   once emsdk is available; `wasm32-unknown-unknown` can serve as a no_std proxy.
