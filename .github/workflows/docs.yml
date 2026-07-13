@@ -1,0 +1,42 @@
+name: docs
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions: {}
+
+jobs:
+  docs:
+    name: docs
+    runs-on: ubuntu-latest
+
+    # Needs write access for the Deploy step
+    permissions: { contents: write }
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
+        with:
+          toolchain: nightly
+
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
+
+      - name: Build docs
+        run: cargo doc --no-deps -Zrustdoc-map
+        env:
+          RUSTDOCFLAGS: "--enable-index-page -Zunstable-options --cfg docsrs"
+
+      - name: Deploy docs
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/doc/
+          force_orphan: true
