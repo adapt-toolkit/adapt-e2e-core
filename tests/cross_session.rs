@@ -1,6 +1,6 @@
 // Copyright 2026 adapt-toolkit. Licensed under Apache-2.0.
 
-//! Cross-session isolation (external review F1 — Grumpy). Every OTHER test in the
+//! Cross-session isolation (external security review, finding F1). Every OTHER test in the
 //! crate drives a single Alice→Bob session; a Double-Ratchet library with no
 //! multi-session coverage has a real gap. These tests run two concurrent sessions
 //! from one Alice identity — Alice↔Bob and Alice↔Carol — and assert they are

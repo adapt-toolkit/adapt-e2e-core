@@ -1,7 +1,7 @@
 // Copyright 2026 adapt-toolkit. Licensed under Apache-2.0.
 
-//! Boundary tests for the THREE external invariants (external security review,
-//! HS+Grumpy). The crate is deliberately a pure `f(state, seed, msg)` — it holds
+//! Boundary tests for the THREE external invariants (from an external security
+//! review). The crate is deliberately a pure `f(state, seed, msg)` — it holds
 //! no state — so three catastrophic-if-violated invariants live ENTIRELY in the
 //! caller (the ADAPT engine), not in the crate:
 //!
@@ -16,7 +16,7 @@
 //! (actually reuses the seed / the pre-consumption pickle / a stale session) and
 //! asserts the break happens — proving the invariant is real, reachable, and
 //! external. A positive-only "distinct inputs ⇒ distinct outputs" check would not
-//! prove reachability; these carry the succeeding-reuse witness (per Grumpy).
+//! prove reachability; these carry the succeeding-reuse witness (defense-in-depth).
 //!
 //! These are CALLER CONTRACTS, documented in docs/CALLER-CONTRACTS.md. The crate
 //! cannot enforce them without breaking determinism (`f(state,seed,msg)` purity).

@@ -166,24 +166,3 @@ These are required for the crate's `no_std`/rv32 lane and the RNG-isolation gate
 - **After D2:** switch the crate's `vodozemac` dep to `default-features = false`
   (Olm-only, no `std-rng`) and add the RNG-isolation symbol gate (SPEC §7.7):
   grep the built object for `getrandom`/`OsRng`/`thread_rng`; fail if present.
-
----
-
-## Crate milestone status (resume pointer)
-
-Detailed per-milestone log + exact resume steps live in the agent WORKLOG
-(`/home/fleet/.ours-fleet/agents/Developer-9/WORKLOG.md`). Summary:
-
-- **M0/M1/M3/M4 — COMPLETE, critic-verified, green.** (skeleton+vendored fork;
-  mgmt+10 C-ABI fns+full adversarial suite+interop+fuzz+miri; getrandom-severance
-  +RNG-isolation gate; no_std + rv32 bare-metal build.)
-- **M5 — IN PROGRESS.** Done: cbindgen C header (`include/adapt_e2e_core.h`,
-  committed; regen `cargo build --features generate-header`); CI matrix
-  (`.github/workflows/ci.yml`: native/rng-isolation/rv32/miri/fuzz).
-  REMAINING: cargo-fuzz targets under `fuzz/` (SPEC §7.6; cargo-fuzz not installed
-  — proptest_abi already covers the property); committed KAT vectors under
-  `tests/vectors/` (SPEC §7.1; interop oracle already proves behaviour-preservation);
-  constant-time smoke (§7.9); coverage gate (cargo-llvm-cov ≥95%); xtask packaging
-  (xcframework/cargo-ndk — need iOS/Android toolchains, consumer-side/documentable).
-- Branches: `crate-bootstrap` (main dev line, green) and `m4-no-std-wip` (merged).
-  Upstream PR: matrix-org/vodozemac#379 (open). Never merge to `main` w/o owner go.
