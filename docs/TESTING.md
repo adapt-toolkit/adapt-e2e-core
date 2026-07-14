@@ -27,9 +27,16 @@ Run everything: `cargo test`. Lint gate: `cargo clippy --all-targets`.
 dev-dependencies (so vodozemac's `std-rng` feature is off) and fails if the
 object links the `getrandom` crate, `OsRng`, `thread_rng`, or the `rand`
 thread-local generator, or if `getrandom` appears in the normal dependency
-graph. This proves the adapt path is a pure function of its injected seed. (Rust
-std's own `std::sys::random` is not the getrandom crate and is expected while
-linking std; it disappears on the `no_std`/bare-metal targets.)
+graph. This proves the adapt path is a pure function of its injected seed.
+
+**Precise claim: zero KEY-MATERIAL OS entropy.** No key or nonce derives from an
+OS source — all key material expands from the injected 32-byte seed via ChaCha20.
+This is *not* the same as "zero OS syscalls in the std build": Rust std links
+`std::sys::random`, but only to seed the `HashMap` `DefaultHasher`'s `RandomState`
+(a DoS-hardening hash seed) — it never touches key material, and it is absent
+entirely on the `no_std`/bare-metal targets. The gate targets the getrandom
+crate / `OsRng` / `thread_rng` (the paths that *could* feed key material), not
+std's hash seed.
 
 ## miri (UB / aliasing at the FFI marshalling)
 
@@ -75,6 +82,16 @@ ChaCha20, the crate needs no OS entropy and no `getrandom` shim on bare metal.
 ```sh
 rustup toolchain install nightly && rustup component add rust-src --toolchain nightly
 ./scripts/rv32_baremetal_build.sh
+```
+
+**Verified at HEAD.** The rv32 build passes (rlib for `riscv32imac-unknown-none-elf`),
+and `getrandom` is absent from the actual severance target's dependency graph:
+
+```sh
+# 0 occurrences on the bare-metal target with no default features:
+cargo +nightly tree --target riscv32imac-unknown-none-elf --no-default-features -e no-dev | grep -c getrandom   # -> 0
+# (getrandom appears only in the DEFAULT std + dev-deps tree — the crates.io
+#  interop oracle's std-rng pull — never in the shipped no_std path.)
 ```
 
 Note: a no_std *library* defers the global allocator, `#[panic_handler]`, and
