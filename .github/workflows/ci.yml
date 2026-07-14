@@ -57,7 +57,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: miri
-      - run: cargo miri test --test ffi
+      # explicit +nightly so rust-toolchain.toml (stable) doesn't shadow it
+      - run: cargo +nightly miri test --test ffi
 
   # Property-based + (bounded) fuzz over the C-ABI boundary.
   fuzz:

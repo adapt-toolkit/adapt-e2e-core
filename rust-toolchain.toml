@@ -1,0 +1,7 @@
+# Pin the toolchain so `cargo` resolves a version even when the CI runner's
+# rustup has no default configured (adapt RunPod CI failed with "rustup could not
+# choose a version of cargo to run — no default is configured"). The native +
+# wasm staticlib builds use stable; the rv32 (-Zbuild-std) and miri jobs override
+# this with an explicit `cargo +nightly`.
+[toolchain]
+channel = "stable"
