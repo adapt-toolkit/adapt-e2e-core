@@ -34,7 +34,10 @@ fn store_session(session: &Session, pickle_key: &[u8; 32]) -> Vec<u8> {
 pub struct InboundResult {
     /// The new session pickle.
     pub session: Vec<u8>,
-    /// The account pickle (mutated: the used one-time key is removed).
+    /// The account pickle with the used one-time key removed. **Caller contract:**
+    /// the crate is stateless and cannot enforce one-time-ness — the caller MUST
+    /// atomically persist THIS pickle and never reuse the pre-consumption one, or
+    /// the one-time key can serve two sessions (see `docs/CALLER-CONTRACTS.md` §2).
     pub account: Vec<u8>,
     /// The decrypted plaintext of the pre-key message.
     pub plaintext: Vec<u8>,
@@ -80,8 +83,11 @@ pub fn outbound(
 }
 
 /// SPEC fn 6 — establish an inbound session from a peer's pre-key message,
-/// consuming the matching one-time key. Returns the session, the mutated
-/// account, and the decrypted first-message plaintext (see module note).
+/// removing the matching one-time key from the RETURNED account. Returns the
+/// session, that mutated account, and the decrypted first-message plaintext (see
+/// module note). The crate does not *enforce* one-time-ness (it is stateless);
+/// the caller must persist the returned account atomically — see
+/// [`InboundResult::account`] and `docs/CALLER-CONTRACTS.md` §2.
 pub fn inbound(
     acct_pickle: &[u8],
     ik_a: &[u8; 32],
