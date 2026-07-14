@@ -92,4 +92,86 @@ proptest! {
         prop_assert_eq!(rc2, 0);
         prop_assert_eq!(&b1[..l1], &b2[..l2]);
     }
+
+    // --- review F4: the previously-UNFUZZED 5 of 10 entry points ------------
+
+    /// ★ e2e_encrypt — the sharpest: it deserializes an UNTRUSTED session pickle
+    /// (same risk class as the already-fuzzed decrypt). Garbage session must be a
+    /// clean negative rc, never a caught panic.
+    #[test]
+    fn encrypt_arbitrary_is_clean(sess in blob(), pt in blob()) {
+        let mut msg = vec![0u8; 16384];
+        let mut msgl = msg.len();
+        let mut mt: u32 = 0;
+        let mut s2 = vec![0u8; 16384];
+        let mut s2l = s2.len();
+        let rc = unsafe {
+            e2e_encrypt(sess.as_ptr(), sess.len(), pt.as_ptr(), pt.len(), [0u8; 32].as_ptr(), PK.as_ptr(),
+                msg.as_mut_ptr(), &mut msgl, &mut mt, s2.as_mut_ptr(), &mut s2l)
+        };
+        prop_assert!(rc < 0, "garbage session pickle must be a clean error, got {rc}");
+        prop_assert_ne!(rc, -99, "must not be a caught panic");
+    }
+
+    /// e2e_account_bundle — arbitrary account pickle (pure read).
+    #[test]
+    fn bundle_arbitrary_is_clean(pickle in blob()) {
+        let rc = one_out(|p, l| unsafe {
+            e2e_account_bundle(pickle.as_ptr(), pickle.len(), PK.as_ptr(), p, l)
+        });
+        prop_assert!(rc < 0);
+        prop_assert_ne!(rc, -99);
+    }
+
+    /// e2e_account_gen_fallback — arbitrary account pickle.
+    #[test]
+    fn gen_fallback_arbitrary_is_clean(pickle in blob()) {
+        let rc = one_out(|p, l| unsafe {
+            e2e_account_gen_fallback(pickle.as_ptr(), pickle.len(), [0u8; 32].as_ptr(), PK.as_ptr(), p, l)
+        });
+        prop_assert!(rc < 0);
+        prop_assert_ne!(rc, -99);
+    }
+
+    /// e2e_session_outbound — arbitrary account pickle + arbitrary ik/otk bytes.
+    #[test]
+    fn outbound_arbitrary_is_clean(acct in blob(), ikb in any::<[u8; 32]>(), otkb in any::<[u8; 32]>()) {
+        let mut s = vec![0u8; 16384];
+        let mut sl = s.len();
+        let mut a = vec![0u8; 16384];
+        let mut al = a.len();
+        let rc = unsafe {
+            e2e_session_outbound(acct.as_ptr(), acct.len(), ikb.as_ptr(), otkb.as_ptr(), [0u8; 32].as_ptr(), PK.as_ptr(),
+                s.as_mut_ptr(), &mut sl, a.as_mut_ptr(), &mut al)
+        };
+        prop_assert!(rc < 0);
+        prop_assert_ne!(rc, -99);
+    }
+
+    /// e2e_session_id — arbitrary session pickle (fixed 32-byte out).
+    #[test]
+    fn session_id_arbitrary_is_clean(sess in blob()) {
+        let mut id = [0u8; 32];
+        let rc = unsafe { e2e_session_id(sess.as_ptr(), sess.len(), PK.as_ptr(), id.as_mut_ptr()) };
+        prop_assert!(rc < 0);
+        prop_assert_ne!(rc, -99);
+    }
+
+    /// ★ Envelope type-confusion (review §4/§6): a REAL account pickle with one
+    /// envelope metadata byte (fmt_ver/engine_ver/kind, offsets 4..8) corrupted,
+    /// fed to a SESSION entry point, must never panic and never load as a session
+    /// — the plaintext (non-AEAD) outer metadata cannot cause acct↔sess confusion.
+    #[test]
+    fn corrupted_envelope_meta_never_type_confuses(seed in any::<[u8; 32]>(), pos in 4usize..8, xor in 1u8..=255) {
+        let mut acct = vec![0u8; 16384];
+        let mut al = acct.len();
+        let rc = unsafe { e2e_account_create(seed.as_ptr(), PK.as_ptr(), acct.as_mut_ptr(), &mut al) };
+        prop_assume!(rc == 0);
+        acct.truncate(al);
+        acct[pos] ^= xor;
+        let mut id = [0u8; 32];
+        let rc2 = unsafe { e2e_session_id(acct.as_ptr(), acct.len(), PK.as_ptr(), id.as_mut_ptr()) };
+        prop_assert!(rc2 < 0, "corrupted-envelope account must not load as a session, got {rc2}");
+        prop_assert_ne!(rc2, -99);
+    }
 }

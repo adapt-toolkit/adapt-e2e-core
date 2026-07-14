@@ -66,4 +66,36 @@ fuzz_target!(|data: &[u8]| {
             lhs.as_ptr(), lhs.len(), rhs.as_ptr(), rhs.len(), PK.as_ptr(), &mut out_bool,
         );
     }
+
+    // 6. ★ encrypt: arbitrary session pickle + plaintext (deserializes an
+    //    untrusted session — the sharpest of the write paths).
+    let mut mt: u32 = 0;
+    unsafe {
+        e2e_encrypt(
+            lhs.as_ptr(), lhs.len(), rhs.as_ptr(), rhs.len(), [0u8; 32].as_ptr(), PK.as_ptr(),
+            a.as_mut_ptr(), &mut al, &mut mt, b.as_mut_ptr(), &mut bl,
+        );
+    }
+    al = a.len();
+    bl = b.len();
+
+    // 7. gen_fallback: arbitrary account pickle.
+    unsafe {
+        e2e_account_gen_fallback(data.as_ptr(), data.len(), [0u8; 32].as_ptr(), PK.as_ptr(), a.as_mut_ptr(), &mut al);
+    }
+    al = a.len();
+
+    // 8. session_outbound: arbitrary account pickle + ik/otk from the split.
+    unsafe {
+        e2e_session_outbound(
+            data.as_ptr(), data.len(), [0u8; 32].as_ptr(), [0u8; 32].as_ptr(), [0u8; 32].as_ptr(), PK.as_ptr(),
+            a.as_mut_ptr(), &mut al, b.as_mut_ptr(), &mut bl,
+        );
+    }
+
+    // 9. session_id: arbitrary session pickle (fixed 32-byte out).
+    let mut id = [0u8; 32];
+    unsafe {
+        e2e_session_id(data.as_ptr(), data.len(), PK.as_ptr(), id.as_mut_ptr());
+    }
 });
