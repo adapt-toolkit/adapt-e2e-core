@@ -1,6 +1,6 @@
 // Copyright 2026 adapt-toolkit. Licensed under Apache-2.0.
 //
-// libFuzzer harness over the `#[no_mangle] extern "C"` boundary (SPEC §7.6).
+// libFuzzer harness over the `#[no_mangle] extern "C"` boundary.
 // Invariant: arbitrary / malformed input bytes NEVER crash, panic, or hit UB —
 // every call returns a clean `int32_t` rc. libFuzzer + ASan/UBSan catch any
 // crash; the catch_unwind guard maps a caught panic to E2E_RC_PANIC (-99), which

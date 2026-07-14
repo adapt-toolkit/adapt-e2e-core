@@ -26,7 +26,7 @@ Every change to `vendor/` MUST be recorded here.
 | Vendored at | `vendor/base64/`, applied via `[patch.crates-io]` in the crate Cargo.toml |
 | Delta | make the `Error` impls (`DecodeError`, `DecodeSliceError`, `EncodeSliceError`, `ParseAlphabetError`) unconditional `core::error::Error` (was `#[cfg(any(feature="std",test))] impl std::error::Error`) so the types impl `Error` in no_std |
 | Rationale | thiserror `#[from] base64::DecodeError` in vodozemac needs the source to impl `core::error::Error`; base64 0.22 only impls it under `std`. Required for the bare-metal build. |
-| Behaviour | **exactly preserving**: since Rust 1.81 `std::error::Error` is a re-export of `core::error::Error` (same trait), so std users see zero change; only 3 files (alphabet/decode/encode) touched, no decode/encode/padding/alphabet logic altered, Cargo.toml byte-identical. Critic-verified (agent a7aaf4e4d): APPROVE; all determinism golden vectors byte-identical. |
+| Behaviour | **exactly preserving**: since Rust 1.81 `std::error::Error` is a re-export of `core::error::Error` (same trait), so std users see zero change; only 3 files (alphabet/decode/encode) touched, no decode/encode/padding/alphabet logic altered, Cargo.toml byte-identical. Verified behaviour-preserving; all determinism golden vectors byte-identical. |
 | Policy | security-backport-only, same as vodozemac; re-audit = `diff -ru` vs pristine base64 0.22.1. **base64ct was explicitly rejected** — its padding semantics differ from vodozemac's "indifferent" mode (crypto-sensitive), so it is NOT a drop-in. |
 
 **Re-audit method:** `git diff` the vendored tree against pristine upstream 0.10.0.
@@ -58,111 +58,39 @@ test). Behaviour-preserving; the audited OsRng code paths are unchanged.
 
 **Tests:** `vendor/vodozemac/tests/with_rng.rs`.
 
-## Pending deltas (NOT upstreamable — our private fork only, tracked)
+## Private deltas (NOT upstreamable — our fork only)
 
-These are required for the crate's `no_std`/rv32 lane and the RNG-isolation gate
-(SPEC §7.7, §9). They are NOT part of PR #379 (upstream wants OsRng-by-default):
+These are required for the crate's `no_std`/rv32 lane and the RNG-isolation
+guarantee. They are NOT part of PR #379 (upstream keeps OsRng-by-default).
 
-- **D2 (M3, DONE):** `rand`, `getrandom`, and `chacha20poly1305` are optional
-  Cargo deps bound to the default-on `std-rng` feature; `--no-default-features`
-  builds the Olm path with the injected-entropy `*_with_rng` API only and links
-  no `rand`/`getrandom`/`OsRng`. The ~25 OS-RNG default methods (leaf ctors,
-  intermediate chain, `Account`/`Session` public defaults, dehydrated-device)
-  are `#[cfg(feature = "std-rng")]`; `rand_core` (the `CryptoRng` trait) is a
-  new non-optional dep. The `getrandom`-crate leak that entered transitively via
-  `chacha20poly1305 -> aead -> crypto-common/getrandom` is severed by making
-  `chacha20poly1305` optional (it is used only by gated dehydration/ECIES/PK
-  paths). The crate depends on vodozemac with `default-features = false` for the
-  shipped lib and re-enables `std-rng` via a dev-dependency for tests. The
-  RNG-isolation gate (`scripts/rng_isolation_gate.sh`, SPEC §7.7) passes: 0
-  forbidden symbols, `getrandom` absent from the normal dep graph. (Rust std's
-  own `std::sys::random` remains while linking std; it goes away on `no_std`/M4.)
-  ORIGINAL PLAN (retained for history):
-- **D2-orig (superseded by the above):** make `rand` and `getrandom` *optional*
-  bound to a new `std-rng` feature (default-on) so `--no-default-features` links
-  no `getrandom`/`OsRng`. DONE so far: Cargo.toml (`rand`/`getrandom` optional;
-  `std-rng = ["dep:rand","dep:getrandom"]`; `default` includes `std-rng`;
-  `wasm_js` now `["dep:getrandom","getrandom/wasm_js"]`); added non-optional
-  `rand_core` (the `CryptoRng` trait for `*_with_rng`, always needed);
-  repointed `use rand::CryptoRng` → `use rand_core::CryptoRng` in 9 files;
-  gated `use rand::rng` behind `std-rng` in curve25519/ed25519. Default build +
-  all 40 crate tests stay green (behaviour-preserving).
-  REMAINING: gate the OS-RNG default-method chain behind `#[cfg(feature =
-  "std-rng")]` — the ~25 default (non-`_with_rng`) methods: leaves
-  `Curve25519SecretKey::new`(+Default), `Curve25519Keypair::new`,
-  `Ed25519Keypair::new`(+Default), `Ed25519SecretKey::new`, `RatchetKey::new`
-  (+Default); intermediates `Ratchet::new`, `RemoteRootKey::advance`,
-  `DoubleRatchet::{next_message_key,encrypt,encrypt_truncated_mac,active}`,
-  `InactiveDoubleRatchet::activate`, `Session::{new,encrypt}`,
-  `OneTimeKeys::{generate,generate_one_time_key}`, `FallbackKey::new`,
-  `FallbackKeys::generate_fallback_key`, `Account::{new,generate_one_time_keys,
-  generate_fallback_key,create_outbound_session}`; plus the dehydrated-device
-  methods (`Nonce::generate` OS entropy). Compiler-guided via `cargo build
-  --no-default-features` (lib only; tests stay under default `std-rng`). The
-  `_with_rng` chain is self-contained and must remain so (never call a default).
-  Currently `--no-default-features` does NOT yet compile (3 leaf `rng()` sites +
-  their cascade) — expected mid-D2.
-- **D3 (M3, DONE):** cfg-gated the non-Olm modules (`ecies`, `megolm`, `sas`,
-  `pk_encryption`) behind `std-rng` in `lib.rs` to remove their OS-entropy draws
-  from the adapt path.
-- **D4 (M4, DONE):** `#![no_std]` conversion COMPLETE. The crate + vendored
-  vodozemac build `#![no_std]`+`alloc`; the crate builds as a `no_std` rlib for
-  `riscv32imac-unknown-none-elf` (nightly `-Zbuild-std=core,alloc`) — bare-metal,
-  no OS, no getrandom (see `scripts/rv32_baremetal_build.sh`). The base64
-  `core::error::Error` hurdle was resolved by the 2nd pinned fork above. std build
-  + 40 tests + RNG-isolation gate all still green. wasm-emscripten is DEFERRED
-  (owner) — the no_std-clean crate is the deliverable; wasm builds consumer-side
-  once emsdk is available. Historical detail of the conversion below.
-- **D4-history (~90% checkpoint that preceded completion):** `#![no_std]` conversion.
-  DONE on the WIP branch: `#![cfg_attr(not(feature="std"), no_std)]` + `#[macro_use]
-  extern crate alloc`; `std`/`alloc` feature restructure with all deps
-  `default-features = false` (+ `alloc`, `+block-padding` on cipher/cbc); per-file
-  cfg-gated `use alloc::{...}` imports across the Olm path; gated ALL
-  `matrix_pickle` (libolm-only) behind `libolm-compat` (imports, `Decode`/`Encode`
-  derives via `cfg_attr`, manual impls, `mod libolm`, `LibolmPickleError` variants);
-  gated `mod dehydrated_device` + `from_decrypted_dehydrated_device` behind
-  `std-rng`; `std::collections::{BTreeMap,HashMap}` -> `alloc::collections::BTreeMap`
-  + `hashbrown::HashMap` (new dep). Error count 147 -> 6.
-  **REMAINING BLOCKER (real, ecosystem-level):** `base64` 0.22 only implements
-  `Error` for `DecodeError` under its `std` feature — no `core::error::Error`
-  impl for no_std — so thiserror's `#[from] base64::DecodeError` in
-  `SignatureError`/`KeyError` etc. fails to compile on the adapt path
-  (`as_dyn_error` not satisfied). FIX OPTIONS (bounded, non-trivial): migrate the
-  `base64_decode`/error paths to the no_std-native `base64ct` (already a dep) and
-  change those error variants to `base64ct::Error`; OR `[patch.crates-io]` a
-  base64 fork adding `#[cfg(not(feature="std"))] impl core::error::Error`. Also 2
-  trivial `use alloc::Vec/Box` spots (account/mod.rs:20, session/mod.rs:25) and
-  then the CRATE's own `#![no_std]` (Vec/String from alloc; ffi `catch_unwind` ->
-  `panic=abort` — already cfg'd). Watch for the same `core::error::Error` friction
-  on `ed25519_dalek::SignatureError`.
-  Verify: `cargo build --no-default-features` in vendor/vodozemac.
-- **D4-superseded — original one-line plan:** `#![no_std]` conversion of the vendored Olm path.
-  FEASIBILITY CONFIRMED: the native pickle backend `serde_json` is `#![no_std]`
-  with `alloc` (the make-or-break); `thiserror` 2.0 is no_std via
-  `default-features = false`; `std::io` on the adapt path is ONLY the
-  `matrix_pickle` `Decode`/`Encode` impls (libolm binary format — the native
-  pickle uses serde), so `libolm-compat` will imply `std` and `matrix-pickle`
-  becomes optional under it. DONE so far: `std::fmt`/`std::ops` → `core::fmt`/
-  `core::ops` (behaviour-neutral; std build + 40 tests green).
-  REMAINING: add a `std` feature (default-on) + `alloc`; restructure deps to
-  `default-features = false` + `alloc`/`std` propagation (serde, serde_json,
-  base64, base64ct, prost, thiserror, sha2/hkdf/hmac/aes/cbc/cipher/subtle,
-  dalek `alloc`); gate the `matrix_pickle` `Decode`/`Encode` impls +
-  `std::io::Cursor` uses behind `libolm-compat`; replace the runtime `HashMap`
-  (`OneTimeKeys::key_ids_by_key`, `Account::one_time_keys()`/`fallback_key()`
-  returns) with `hashbrown` or `BTreeMap`; `#![cfg_attr(not(feature="std"),
-  no_std)]` + `extern crate alloc;` and fix `use std::` → `core::`/`alloc::`;
-  then make the CRATE `#![no_std]`. Compiler-guided via
-  `cargo build --no-default-features`.
-- **M4 BUILD LANES — toolchain reality (checked):**
-  - **rv32 bare-metal FEASIBLE:** `riscv32imac-unknown-none-elf` target +
-    nightly + `rust-src` are installed; `-Zbuild-std=core,alloc`, `panic=abort`,
-    float-ABI pin. The M3 getrandom-severance is exactly what unblocks it.
-  - **wasm-emscripten BLOCKED (environmental):** `emcc` is NOT installed, and the
-    spec target `wasm32-unknown-emscripten` must be ABI-pinned to the *consumer's*
-    emcc, which is unavailable here. Needs emsdk (a large external SDK) or the
-    consumer's toolchain. `wasm32-unknown-unknown` could serve as a no_std proxy
-    but is not the spec target.
-- **After D2:** switch the crate's `vodozemac` dep to `default-features = false`
-  (Olm-only, no `std-rng`) and add the RNG-isolation symbol gate (SPEC §7.7):
-  grep the built object for `getrandom`/`OsRng`/`thread_rng`; fail if present.
+- **D2 — getrandom severance.** `rand`, `getrandom`, and `chacha20poly1305` are
+  optional Cargo deps bound to the default-on `std-rng` feature. With
+  `--no-default-features` the Olm path exposes only the injected-entropy
+  `*_with_rng` API and links no `rand`/`getrandom`/`OsRng`: the OS-RNG default
+  methods (leaf constructors, intermediate chain, `Account`/`Session` defaults,
+  dehydrated-device) are `#[cfg(feature = "std-rng")]`, while `rand_core` (the
+  `CryptoRng` trait) is a non-optional dep. The transitive `getrandom` leak via
+  `chacha20poly1305 -> aead -> crypto-common` is severed by making
+  `chacha20poly1305` optional (used only by gated dehydration/ECIES/PK paths). The
+  shipped lib depends on vodozemac with `default-features = false`; tests re-enable
+  `std-rng` via a dev-dependency. Verified by `scripts/rng_isolation_gate.sh`:
+  zero forbidden symbols, `getrandom` absent from the normal dependency graph.
+
+- **D3 — non-Olm engines gated.** `ecies`, `megolm`, `sas`, and `pk_encryption`
+  are cfg-gated behind `std-rng` in `lib.rs`, removing their OS-entropy draws from
+  the adapt path.
+
+- **D4 — `#![no_std]` + `alloc`.** The vendored vodozemac (and the crate) build
+  `#![no_std]` + `alloc`: `#![cfg_attr(not(feature = "std"), no_std)]` + `extern
+  crate alloc`; a `std`/`alloc` feature split with all deps
+  `default-features = false` (+ `block-padding` on cipher/cbc); per-file
+  `alloc::{...}` imports on the Olm path; the libolm binary-pickle backend
+  (`matrix_pickle`, which needs `std::io`) gated behind `libolm-compat`;
+  `mod dehydrated_device` gated behind `std-rng`; and the runtime `HashMap` moved
+  to `hashbrown` / `alloc::BTreeMap`. The base64 `core::error::Error` requirement
+  is met by the 2nd pinned fork above. The crate then builds as a `no_std` rlib
+  for `riscv32imac-unknown-none-elf` (nightly `-Zbuild-std=core,alloc`) —
+  bare-metal, no OS, no getrandom (see `scripts/rv32_baremetal_build.sh`). The
+  `wasm32-unknown-emscripten` lane is not built here (it must be ABI-pinned to the
+  consumer's emsdk/emcc); the no_std-clean crate builds consumer-side once emsdk
+  is available.

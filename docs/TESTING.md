@@ -1,7 +1,7 @@
 # Testing adapt-e2e-core
 
 The crate is only as trustworthy as its tests — the failure mode is "green CI,
-silently insecure" (SPEC §7). This document is the map of what is tested and how
+silently insecure". This document is the map of what is tested and how
 to run each gate. Everything below runs green today except where marked pending.
 
 ## Test suites
@@ -16,12 +16,12 @@ to run each gate. Everything below runs green today except where marked pending.
 | Interop oracle | `tests/interop.rs` | our seed-injected fork is wire-compatible with the **real upstream vodozemac 0.10.0** (crates.io), both handshake directions — the independent behaviour-preservation check. |
 | Property fuzz | `tests/proptest_abi.rs` | arbitrary bytes to the C-ABI never panic (no `PANIC=-99`), always a clean error; `e2e_account_create` is total + deterministic over the whole input space. |
 | Golden vectors | `tests/golden_vectors.rs` | byte-pins every keygen seam (identity Curve25519 + Ed25519, one-time key, fallback key, session id) from fixed seeds — cross-build determinism regression guard. |
-| libFuzzer | `fuzz/` (SPEC §7.6) | coverage-guided libFuzzer over the C-ABI (needs `cargo-fuzz`; CI runs a bounded budget). Same no-crash invariant as the proptest suite. See `fuzz/README.md`. |
+| libFuzzer | `fuzz/` | coverage-guided libFuzzer over the C-ABI (needs `cargo-fuzz`; CI runs a bounded budget). Same no-crash invariant as the proptest suite. See `fuzz/README.md`. |
 | Seam smoke | `tests/seam_smoke.rs` | the crate drives the vendored fork's `*_with_rng` seam deterministically. |
 
 Run everything: `cargo test`. Lint gate: `cargo clippy --all-targets`.
 
-## RNG-isolation gate (SPEC §7.7)
+## RNG-isolation gate
 
 `scripts/rng_isolation_gate.sh` builds the release staticlib **without**
 dev-dependencies (so vodozemac's `std-rng` feature is off) and fails if the
@@ -55,22 +55,22 @@ Under Tree Borrows the crate is miri-clean (pure marshalling passes under either
 model; the crypto path passes under Tree Borrows). Stacked-Borrows on the
 crypto path is tracked upstream in the `cbc`/`cipher` crates.
 
-## Pending (tracked for later milestones)
+## Not yet implemented
 
-- **Coverage gate** ≥95% line on `ffi`/`mgmt`/`seeded_rng` (SPEC §7.10) — needs
+- **Coverage gate** ≥95% line on `ffi`/`mgmt`/`seeded_rng` — needs
   `cargo-llvm-cov` (not installed here); a CI addition.
-- **Constant-time posture** (SPEC §7.9) — the constant-time scalar/compare ops are
+- **Constant-time posture** — the constant-time scalar/compare ops are
   inherited from `curve25519-dalek`/`subtle` (decrypt MAC-compare, X25519). The
   management layer adds no data-dependent branches on secret material: `decrypt`
   returns every failure via the same `DecryptFailed` path (no early
   secret-dependent return), and pickle AEAD/MAC is vodozemac's. This is a posture
   statement + regression guard, not a formal CT proof; a `dudect`-style timing
   harness is a future CI addition.
-- **wasm-emscripten lane** (SPEC §6.2) — DEFERRED (owner): needs the consumer's
+- **wasm-emscripten lane** — DEFERRED (owner): needs the consumer's
   emsdk/emcc (ABI-pinned). The crate is no_std-clean, so it builds consumer-side
   once emsdk is available; `wasm32-unknown-unknown` can serve as a no_std proxy.
 
-## no_std / rv32 bare-metal (SPEC §6.3, §9) — DONE
+## no_std / rv32 bare-metal — DONE
 
 The crate and the vendored vodozemac fork are `#![no_std]` + `alloc` (the `std`
 feature, default-on, is native convenience only). `scripts/rv32_baremetal_build.sh`

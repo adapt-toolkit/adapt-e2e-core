@@ -41,7 +41,7 @@ default = ["libolm-compat", "precomputed-tables", "std-rng", "std"]
 wasm_js = ["dep:getrandom", "getrandom/wasm_js"]
 # ADAPT fork (adapt-e2e-core): `std` gates the standard library. With `std` OFF
 # (`--no-default-features`) the crate is `#![no_std]` + `alloc` — the
-# injected-entropy Olm path for bare-metal targets (SPEC §6.3, §9). `alloc` is
+# injected-entropy Olm path for bare-metal targets. `alloc` is
 # always required and enabled directly on the dependencies below.
 std = [
     "serde/std", "serde_json/std", "base64/std", "base64ct/std",
@@ -68,7 +68,7 @@ low-level-api = []
 
 [dependencies]
 # All deps are `no_std`-capable; `std` is turned on via this crate's `std`
-# feature (ADAPT fork — SPEC §9).
+# feature (ADAPT fork).
 aes = { version = "0.9.1", default-features = false }
 cipher = { version = "0.5.2", default-features = false, features = ["alloc", "block-padding"] }
 arrayvec = { version = "0.7.8", default-features = false, features = ["serde"] }

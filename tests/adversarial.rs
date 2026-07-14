@@ -1,6 +1,6 @@
 // Copyright 2026 adapt-toolkit. Licensed under Apache-2.0.
 
-//! The adversarial suite (SPEC §7) — the tests that matter, driven through the
+//! The adversarial suite — the tests that matter, driven through the
 //! management layer:
 //!
 //! * determinism-under-replay golden (byte-pinned);
@@ -47,7 +47,7 @@ fn established() -> (Vec<u8>, Vec<u8>) {
     (e0.session, inb.session)
 }
 
-// --- SPEC §7.3 determinism-under-replay golden -----------------------------
+// --- determinism-under-replay golden -----------------------------
 
 #[test]
 fn determinism_golden_is_stable() {
@@ -85,7 +85,7 @@ fn determinism_golden_dh_advance_is_stable() {
 
 const GOLDEN_DH_ADVANCE_HEX: &str = "030a20b2678df336ebede372ec359b26400701a83de822273499dd23da0ccfcb86872b100022109882071d900ccbfd8d095fd059a4deca769c230da415162f";
 
-// --- SPEC §7.4 retry-vs-replay entropy guard -------------------------------
+// --- retry-vs-replay entropy guard -------------------------------
 
 #[test]
 fn replay_same_seed_same_session_is_byte_identical() {
@@ -124,7 +124,7 @@ fn retry_two_new_dh_steps_diverge_under_fresh_seeds() {
 
     // Reusing the SAME seed across two distinct advancing steps collapses to the
     // identical ephemeral — the failure mode is REACHABLE, proving the host's
-    // fresh-seed-per-new-DH-step obligation is necessary (SPEC §5.3).
+    // fresh-seed-per-new-DH-step obligation is necessary.
     let m_reuse_a = alice_advancing_message(40);
     assert_eq!(
         m_fresh_a, m_reuse_a,
@@ -132,7 +132,7 @@ fn retry_two_new_dh_steps_diverge_under_fresh_seeds() {
     );
 }
 
-// --- SPEC §7 skipped-message-key store -------------------------------------
+// --- skipped-message-key store -------------------------------------
 
 #[test]
 fn skipped_keys_decrypt_out_of_order_within_window() {
@@ -152,7 +152,7 @@ fn skipped_keys_decrypt_out_of_order_within_window() {
     assert_eq!(p2, b"two", "the skipped key decrypts out of order");
 }
 
-// --- SPEC §7 skipped-key BOUND + tamper rejection --------------------------
+// --- skipped-key BOUND + tamper rejection --------------------------
 
 #[test]
 fn tampered_ciphertext_fails_cleanly() {
@@ -170,7 +170,7 @@ fn tampered_ciphertext_fails_cleanly() {
     );
 }
 
-// --- SPEC §7.8 NEGATIVE forward secrecy (the keystone) ---------------------
+// --- NEGATIVE forward secrecy (the keystone) ---------------------
 
 #[test]
 fn consumed_in_order_key_is_not_retained() {

@@ -1,6 +1,6 @@
 // Copyright 2026 adapt-toolkit. Licensed under Apache-2.0.
 
-//! Cross-implementation interop (SPEC §7.2) — the independent oracle. Our
+//! Cross-implementation interop — the independent oracle. Our
 //! seed-injected fork must be wire-compatible with the REAL upstream vodozemac
 //! from crates.io (`vodozemac_upstream`). Because every other test in the crate
 //! checks the fork against *itself*, this is the only defence against a

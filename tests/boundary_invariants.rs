@@ -3,7 +3,7 @@
 //! Boundary tests for the THREE external invariants (from an external security
 //! review). The crate is deliberately a pure `f(state, seed, msg)` — it holds
 //! no state — so three catastrophic-if-violated invariants live ENTIRELY in the
-//! caller (the ADAPT engine), not in the crate:
+//! caller (the host engine), not in the crate:
 //!
 //!   1. **seed uniqueness** — a distinct entropy window per entropy-bearing op;
 //!      violation ⇒ ephemeral/nonce reuse ⇒ key recovery.
@@ -33,7 +33,9 @@ fn with_otks(pickle: &[u8], n: u32, seed: u8) -> Vec<u8> {
 }
 /// Identity Curve25519 key = first 32 bytes of the bundle.
 fn ik(pickle: &[u8]) -> [u8; 32] {
-    bundle::bundle(pickle, &PK).unwrap()[0..32].try_into().unwrap()
+    bundle::bundle(pickle, &PK).unwrap()[0..32]
+        .try_into()
+        .unwrap()
 }
 /// First published one-time key from the bundle body.
 fn first_otk(pickle: &[u8]) -> [u8; 32] {
@@ -82,7 +84,7 @@ fn seed_reuse_across_distinct_dh_steps_is_a_reachable_break() {
     // ★ WITNESS: the SAME seed on two DISTINCT DH-advancing encrypts reproduces a
     // byte-identical ephemeral. The crate has ZERO in-crate defence — it expands
     // whatever seed it is handed. So seed-reuse ⇒ ephemeral/nonce reuse IS
-    // reachable; the ADAPT engine MUST supply a distinct entropy window per
+    // reachable; the host engine MUST supply a distinct entropy window per
     // DH-advancing op (CALLER CONTRACT #1).
     let reuse = alice_advancing_message(40);
     assert_eq!(
@@ -95,7 +97,7 @@ fn seed_reuse_across_distinct_dh_steps_is_a_reachable_break() {
 fn replay_same_state_and_seed_is_byte_identical_by_design() {
     // The flip side of the contract: identical (state, seed, plaintext) MUST give
     // byte-identical ciphertext — this is the required determinism a consensus
-    // replay depends on (SPEC §5.3). Distinctness is the caller's job, not the
+    // replay depends on. Distinctness is the caller's job, not the
     // crate's; the crate's job is exact reproduction.
     let (alice_sess, _bob) = established();
     let a = session::encrypt(&alice_sess, b"x", &[9; 32], &PK).unwrap();
@@ -155,7 +157,10 @@ fn tampered_pickle_body_is_rejected_by_the_pickle_mac() {
     // The inner vodozemac pickle is AES-CBC + truncated HMAC under pickle_key.
     // Flipping any body byte must fail the MAC on load — no silent corruption.
     let a = acct(1);
-    assert!(bundle::bundle(&a, &PK).is_ok(), "untampered account loads (non-vacuous baseline)");
+    assert!(
+        bundle::bundle(&a, &PK).is_ok(),
+        "untampered account loads (non-vacuous baseline)"
+    );
     let mut bad = a.clone();
     let last = bad.len() - 1;
     bad[last] ^= 0x01;

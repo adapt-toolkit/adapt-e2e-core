@@ -1,6 +1,6 @@
 //! # adapt-e2e-core
 //!
-//! A standalone, pure-Rust, MUFL/ADAPT-agnostic Signal-class end-to-end channel
+//! A standalone, pure-Rust, host-agnostic Signal-class end-to-end channel
 //! (X3DH-class handshake + Double Ratchet) exposed as a C-ABI library. It is a
 //! vendored, pinned fork of [vodozemac](https://github.com/matrix-org/vodozemac)
 //! (the additive `*_with_rng` entropy-injection seam) plus a thin

@@ -4,7 +4,7 @@
 //! Every keygen-bearing operation expands a caller-supplied **32-byte seed**
 //! into as many keystream bytes as it needs via a ChaCha20 CSPRNG. This is what
 //! makes the engine a pure function `f(state, seed, msg) -> (state', out)`
-//! (SPEC §5) and lets it link no `getrandom`/`OsRng` on any target (SPEC §9).
+//! and lets it link no `getrandom`/`OsRng` on any target.
 //!
 //! The seeded RNG is handed to the vendored vodozemac fork's additive
 //! `*_with_rng` entry points, which thread it down to every secret-key mint.
@@ -18,7 +18,7 @@ use zeroize::Zeroize;
 /// Wraps a [`ChaCha20Rng`]. Construct it with [`SeededRng::from_seed`] and hand
 /// it to vodozemac's `*_with_rng` APIs via [`SeededRng::rng`]. Identical seeds
 /// produce identical keystreams and therefore byte-identical keys and
-/// ciphertext — the core determinism guarantee (SPEC §5.2).
+/// ciphertext — the core determinism guarantee.
 ///
 /// The 32-byte seed is wiped from the caller's copy on construction; the
 /// expanded ChaCha20 state lives only as long as this value.

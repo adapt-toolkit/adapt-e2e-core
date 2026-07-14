@@ -210,7 +210,7 @@
 //! ```
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
-// ADAPT fork: `no_std` + `alloc` on the adapt path (SPEC §9). `std` is a
+// ADAPT fork: `no_std` + `alloc` on the adapt path. `std` is a
 // default-on feature for the native build.
 #![cfg_attr(not(feature = "std"), no_std)]
 

@@ -1,5 +1,5 @@
-//! Prekey-bundle emission (SPEC fn 4). Pure read of an account's public
-//! material; the *host* signs it and defines the wire format (SPEC §4.3). We
+//! Prekey-bundle emission. Pure read of an account's public
+//! material; the *host* signs it and defines the wire format. We
 //! emit a concrete, self-describing, **deterministic** (key-id-sorted) body:
 //!
 //! ```text
@@ -31,7 +31,7 @@ fn key_id_u32(id: KeyId) -> u32 {
     acc as u32
 }
 
-/// SPEC fn 4 — emit the account's public prekey-bundle material.
+/// Emit the account's public prekey-bundle material.
 pub fn bundle(acct_pickle: &[u8], pickle_key: &[u8; 32]) -> Result<Vec<u8>> {
     let account = account::load(acct_pickle, pickle_key)?;
 

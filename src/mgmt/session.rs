@@ -1,9 +1,9 @@
-//! Session-side management primitives (SPEC fns 5–9): establish outbound /
+//! Session-side management primitives: establish outbound /
 //! inbound sessions, encrypt, decrypt, read the session id. Each takes the
 //! caller's `pickle_key` (and a `seed` on the keygen-bearing calls) and returns
 //! new envelope-wrapped pickles. The crate keeps no state.
 //!
-//! **Deviation from the abbreviated SPEC §2 signature:** [`inbound`] also returns
+//! **Deviation from the abbreviated C-ABI signature:** [`inbound`] also returns
 //! the plaintext of the pre-key message. vodozemac's `create_inbound_session`
 //! consumes and decrypts that first message while establishing the session, so
 //! the plaintext would otherwise be irrecoverably lost. Flagged for review.
@@ -30,7 +30,7 @@ fn store_session(session: &Session, pickle_key: &[u8; 32]) -> Vec<u8> {
     pickle::wrap(Kind::Session, &session.pickle().encrypt(pickle_key))
 }
 
-/// The outputs of establishing an inbound session (SPEC fn 6).
+/// The outputs of establishing an inbound session.
 pub struct InboundResult {
     /// The new session pickle.
     pub session: Vec<u8>,
@@ -43,7 +43,7 @@ pub struct InboundResult {
     pub plaintext: Vec<u8>,
 }
 
-/// The outputs of an encrypt call (SPEC fn 7).
+/// The outputs of an encrypt call.
 pub struct EncryptResult {
     /// 0 = pre-key message, 1 = normal message (matches [`MessageType`]).
     pub msg_type: u32,
@@ -53,7 +53,7 @@ pub struct EncryptResult {
     pub session: Vec<u8>,
 }
 
-/// SPEC fn 5 — create an outbound session to a peer's identity + one-time key.
+/// Create an outbound session to a peer's identity + one-time key.
 /// Returns `(session_pickle, account_pickle)`. The account is unchanged (an
 /// outbound session mints its own ephemeral) but re-emitted for API uniformity.
 pub fn outbound(
@@ -82,7 +82,7 @@ pub fn outbound(
     ))
 }
 
-/// SPEC fn 6 — establish an inbound session from a peer's pre-key message,
+/// Establish an inbound session from a peer's pre-key message,
 /// removing the matching one-time key from the RETURNED account. Returns the
 /// session, that mutated account, and the decrypted first-message plaintext (see
 /// module note). The crate does not *enforce* one-time-ness (it is stateless);
@@ -109,7 +109,7 @@ pub fn inbound(
     })
 }
 
-/// SPEC fn 7 — encrypt `plaintext`, drawing `seed` only if the message triggers
+/// Encrypt `plaintext`, drawing `seed` only if the message triggers
 /// a Diffie-Hellman ratchet advance. Returns the message + advanced session.
 pub fn encrypt(
     sess_pickle: &[u8],
@@ -130,7 +130,7 @@ pub fn encrypt(
     })
 }
 
-/// SPEC fn 8 — decrypt a message into plaintext + the advanced session. Draws no
+/// Decrypt a message into plaintext + the advanced session. Draws no
 /// entropy. `msg_type` is 0 (pre-key) or 1 (normal), per [`MessageType`].
 pub fn decrypt(
     sess_pickle: &[u8],
@@ -148,7 +148,7 @@ pub fn decrypt(
     Ok((plaintext, store_session(&session, pickle_key)))
 }
 
-/// SPEC fn 9a — the session's globally-unique 32-byte id.
+/// The session's globally-unique 32-byte id.
 pub fn session_id(sess_pickle: &[u8], pickle_key: &[u8; 32]) -> Result<[u8; 32]> {
     let session = load_session(sess_pickle, pickle_key)?;
     let id_b64 = session.session_id();
@@ -156,7 +156,7 @@ pub fn session_id(sess_pickle: &[u8], pickle_key: &[u8; 32]) -> Result<[u8; 32]>
     raw.as_slice().try_into().map_err(|_| Error::Internal)
 }
 
-/// SPEC fn 9b — does `sess_pickle` correspond to the session that `prekey_msg`
+/// Does `sess_pickle` correspond to the session that `prekey_msg`
 /// would establish? Used for idempotent PRE_KEY re-delivery detection: a
 /// re-delivered pre-key message shares the session id of the session it created,
 /// so the consumer can skip creating a duplicate inbound session.

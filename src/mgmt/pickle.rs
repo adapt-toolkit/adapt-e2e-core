@@ -1,4 +1,4 @@
-//! The self-describing pickle envelope (SPEC §4.2).
+//! The self-describing pickle envelope.
 //!
 //! Both blob kinds share an outer envelope wrapping a vodozemac *encrypted
 //! pickle* (AES-256-CBC + truncated HMAC-SHA256 under the caller's `pickle_key`
@@ -23,7 +23,7 @@ const FMT_VER: u8 = 1;
 /// vodozemac's native pickle carries no format-version integer of its own, so
 /// this is a **crate-assigned** constant meaning "the pickle serde shape shipped
 /// with the vendored vodozemac revision". Bump it whenever a vendored-rev change
-/// alters the pickle shape; the compat-matrix test (SPEC §7.5) guards it.
+/// alters the pickle shape; the compat-matrix test guards it.
 pub const ENGINE_VER: u16 = 1;
 
 const HEADER_LEN: usize = 4 + 1 + 2 + 1;

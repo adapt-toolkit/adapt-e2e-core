@@ -1,4 +1,4 @@
-//! Account-side management primitives (SPEC fns 1–4): create identity, generate
+//! Account-side management primitives: create identity, generate
 //! one-time / fallback keys. Each orchestrates `unpickle → op(SeededRng) →
 //! pickle`, taking the caller's 32-byte seed and `pickle_key` and returning the
 //! new envelope-wrapped account pickle. The crate keeps no state.
@@ -23,13 +23,13 @@ pub(crate) fn store(account: &Account, pickle_key: &[u8; 32]) -> Vec<u8> {
     pickle::wrap(Kind::Account, &account.pickle().encrypt(pickle_key))
 }
 
-/// SPEC fn 1 — create a new account with identity keys derived from `seed`.
+/// Create a new account with identity keys derived from `seed`.
 pub fn create(seed: &[u8; 32], pickle_key: &[u8; 32]) -> Result<Vec<u8>> {
     let account = Account::new_with_rng(SeededRng::from_seed(*seed).rng());
     Ok(store(&account, pickle_key))
 }
 
-/// SPEC fn 2 — generate `n` one-time keys, all drawn from `seed`.
+/// Generate `n` one-time keys, all drawn from `seed`.
 pub fn gen_otks(
     in_pickle: &[u8],
     n: u32,
@@ -41,7 +41,7 @@ pub fn gen_otks(
     Ok(store(&account, pickle_key))
 }
 
-/// SPEC fn 3 — generate a new fallback key from `seed`.
+/// Generate a new fallback key from `seed`.
 pub fn gen_fallback(in_pickle: &[u8], seed: &[u8; 32], pickle_key: &[u8; 32]) -> Result<Vec<u8>> {
     let mut account = load(in_pickle, pickle_key)?;
     account.generate_fallback_key_with_rng(SeededRng::from_seed(*seed).rng());

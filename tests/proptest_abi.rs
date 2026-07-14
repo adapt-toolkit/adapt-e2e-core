@@ -1,6 +1,6 @@
 // Copyright 2026 adapt-toolkit. Licensed under Apache-2.0.
 
-//! Property-based fuzzing of the C-ABI boundary (SPEC §7.6). The load-bearing
+//! Property-based fuzzing of the C-ABI boundary. The load-bearing
 //! invariant: arbitrary / malformed input bytes NEVER panic, crash, or hit UB —
 //! they always yield a clean negative return code. `proptest` treats any panic
 //! (including one caught by the FFI `catch_unwind` guard converting to

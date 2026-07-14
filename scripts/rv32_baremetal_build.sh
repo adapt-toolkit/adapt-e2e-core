@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# rv32 bare-metal build gate (SPEC §6.3, §9).
+# rv32 bare-metal build gate.
 #
 # Builds the crate as a `no_std` rlib for `riscv32imac-unknown-none-elf` — no OS,
 # no std, no getrandom — using nightly + `-Zbuild-std` (core/alloc built from

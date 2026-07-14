@@ -1,5 +1,5 @@
 //! Generates the committed C header `include/adapt_e2e_core.h` from the
-//! `extern "C"` surface via cbindgen (SPEC §1, §2), gated behind the
+//! `extern "C"` surface via cbindgen, gated behind the
 //! `generate-header` feature so it is host-only tooling and never runs during
 //! normal / `no_std` / rv32 (`-Zbuild-std`) target builds. The header is
 //! committed for consumers; regenerate with `cargo build --features generate-header`.

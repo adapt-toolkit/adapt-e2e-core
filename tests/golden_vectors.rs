@@ -1,6 +1,6 @@
 // Copyright 2026 adapt-toolkit. Licensed under Apache-2.0.
 
-//! Committed golden vectors (SPEC §7.1, §7.3) pinning the deterministic output
+//! Committed golden vectors pinning the deterministic output
 //! of EVERY keygen seam byte-for-byte, from fixed `(seed, pickle_key)` inputs.
 //! Where the M1 ciphertext goldens (`tests/adversarial.rs`) pin the encrypt
 //! path, these pin the account-side seams (identity, one-time key, fallback) and

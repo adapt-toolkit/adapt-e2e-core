@@ -26,7 +26,7 @@ jobs:
       - run: cargo build --features generate-header
       - run: git diff --exit-code -- include/adapt_e2e_core.h
 
-  # The RNG-isolation gate (SPEC §7.7): the shipped library links no
+  # The RNG-isolation gate: the shipped library links no
   # getrandom/OsRng/thread_rng — the crate is a pure function of its seed.
   rng-isolation:
     runs-on: ubuntu-latest
@@ -35,7 +35,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: ./scripts/rng_isolation_gate.sh
 
-  # no_std + rv32 bare-metal (SPEC §6.3, §9): the crate builds for
+  # no_std + rv32 bare-metal: the crate builds for
   # riscv32imac-unknown-none-elf with -Zbuild-std, no OS, no getrandom.
   rv32-baremetal:
     runs-on: ubuntu-latest
@@ -59,11 +59,11 @@ jobs:
           components: miri
       - run: cargo miri test --test ffi
 
-  # Property-based + (bounded) fuzz over the C-ABI boundary (SPEC §7.6).
+  # Property-based + (bounded) fuzz over the C-ABI boundary.
   fuzz:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test --test proptest_abi
-      # A bounded cargo-fuzz budget per PR runs once the fuzz/ targets land (M5).
+      # A bounded cargo-fuzz budget runs per PR (see fuzz/).

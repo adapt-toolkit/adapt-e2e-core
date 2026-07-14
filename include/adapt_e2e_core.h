@@ -1,4 +1,4 @@
-/* adapt-e2e-core — C-ABI (Apache-2.0). See docs/SPEC.md. */
+/* adapt-e2e-core — C-ABI (Apache-2.0). */
 
 #ifndef ADAPT_E2E_CORE_H
 #define ADAPT_E2E_CORE_H
@@ -19,7 +19,7 @@
  * vodozemac's native pickle carries no format-version integer of its own, so
  * this is a **crate-assigned** constant meaning "the pickle serde shape shipped
  * with the vendored vodozemac revision". Bump it whenever a vendored-rev change
- * alters the pickle shape; the compat-matrix test (SPEC §7.5) guards it.
+ * alters the pickle shape; the compat-matrix test guards it.
  */
 #define ENGINE_VER 1
 
@@ -90,7 +90,7 @@ extern "C" {
 #endif // __cplusplus
 
 /**
- * SPEC fn 1 — create a new account from `seed`.
+ * Create a new account from `seed`.
  *
  * # Safety
  * All non-NULL pointers must be valid per the two-call convention.
@@ -101,7 +101,7 @@ int32_t e2e_account_create(const uint8_t *seed,
                            size_t *out_pickle_len);
 
 /**
- * SPEC fn 2 — generate `n` one-time keys from `seed`.
+ * Generate `n` one-time keys from `seed`.
  *
  * # Safety
  * All non-NULL pointers must be valid per the two-call convention.
@@ -115,7 +115,7 @@ int32_t e2e_account_gen_otks(const uint8_t *in_pickle,
                              size_t *out_pickle_len);
 
 /**
- * SPEC fn 3 — generate a fallback key from `seed`.
+ * Generate a fallback key from `seed`.
  *
  * # Safety
  * All non-NULL pointers must be valid per the two-call convention.
@@ -128,7 +128,7 @@ int32_t e2e_account_gen_fallback(const uint8_t *in_pickle,
                                  size_t *out_pickle_len);
 
 /**
- * SPEC fn 4 — emit the account's public prekey-bundle material. Pure read.
+ * Emit the account's public prekey-bundle material. Pure read.
  *
  * # Safety
  * All non-NULL pointers must be valid per the two-call convention.
@@ -140,7 +140,7 @@ int32_t e2e_account_bundle(const uint8_t *in_pickle,
                            size_t *out_bundle_len);
 
 /**
- * SPEC fn 5 — create an outbound session. Emits `out_session` and (unchanged)
+ * Create an outbound session. Emits `out_session` and (unchanged)
  * `out_pickle` (account). Both follow the two-call convention.
  *
  * # Safety
@@ -158,7 +158,7 @@ int32_t e2e_session_outbound(const uint8_t *in_pickle,
                              size_t *out_pickle_len);
 
 /**
- * SPEC fn 6 — establish an inbound session from a pre-key message. Emits
+ * Establish an inbound session from a pre-key message. Emits
  * `out_session`, the mutated `out_pickle` (account, OTK removed), and the
  * decrypted first-message `out_pt`. All follow the two-call convention.
  *
@@ -179,7 +179,7 @@ int32_t e2e_session_inbound(const uint8_t *in_pickle,
                             size_t *out_pt_len);
 
 /**
- * SPEC fn 7 — encrypt `pt`. Draws `seed` only on a DH-ratchet advance. Emits the
+ * Encrypt `pt`. Draws `seed` only on a DH-ratchet advance. Emits the
  * message body (`out_msg`), its type (`out_msg_type`: 0=pre-key, 1=normal), and
  * the advanced session (`out_session`).
  *
@@ -199,7 +199,7 @@ int32_t e2e_encrypt(const uint8_t *in_session,
                     size_t *out_session_len);
 
 /**
- * SPEC fn 8 — decrypt a message. Draws no entropy. Emits plaintext + advanced
+ * Decrypt a message. Draws no entropy. Emits plaintext + advanced
  * session.
  *
  * # Safety
@@ -217,7 +217,7 @@ int32_t e2e_decrypt(const uint8_t *in_session,
                     size_t *out_session_len);
 
 /**
- * SPEC fn 9a — write the session's 32-byte id into `out_id[32]`.
+ * Write the session's 32-byte id into `out_id[32]`.
  *
  * # Safety
  * `out_id` must be valid for writes of 32 bytes.
@@ -228,7 +228,7 @@ int32_t e2e_session_id(const uint8_t *in_session,
                        uint8_t *out_id);
 
 /**
- * SPEC fn 9b — write 1 into `*out_bool` if the session pickle corresponds to the
+ * Write 1 into `*out_bool` if the session pickle corresponds to the
  * session the pre-key message would establish (idempotent re-delivery
  * detection), else 0.
  *

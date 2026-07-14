@@ -4,7 +4,7 @@
 
 //! M0 smoke test: prove the crate can drive the vendored vodozemac
 //! entropy-injection seam deterministically through [`SeededRng`]. This is the
-//! foundation the full determinism/KAT/interop suite (SPEC §7) builds on.
+//! foundation the full determinism/KAT/interop suite builds on.
 
 use adapt_e2e_core::seeded_rng::SeededRng;
 use vodozemac::olm::{Account, OlmMessage, SessionConfig};
@@ -25,7 +25,7 @@ fn account_creation_is_deterministic_via_seeded_rng() {
 fn full_outbound_flow_is_byte_identical_under_the_same_seeds() {
     // Run the whole "create Bob, mint an OTK, open an outbound session, encrypt"
     // flow twice with identical seeds and assert byte-identical ciphertext —
-    // the crate-level statement of SPEC §5.2 determinism, driven end to end
+    // the crate-level statement of determinism, driven end to end
     // through the vendored fork's `*_with_rng` seam.
     let run = || -> (String, (usize, Vec<u8>)) {
         let mut bob = Account::new_with_rng(SeededRng::from_seed([1u8; 32]).rng());

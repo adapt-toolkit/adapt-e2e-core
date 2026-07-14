@@ -1,4 +1,4 @@
-# Fuzzing adapt-e2e-core (SPEC §7.6)
+# Fuzzing adapt-e2e-core
 
 libFuzzer targets over the `#[no_mangle] extern "C"` boundary. Malformed input
 must never crash, panic, or hit UB — always a clean `int32_t` rc.

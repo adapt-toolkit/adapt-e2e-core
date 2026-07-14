@@ -8,7 +8,7 @@ edition = "2021"
 cargo-fuzz = true
 
 # Run with: cargo +nightly fuzz run ffi_boundary   (requires: cargo install cargo-fuzz)
-# CI runs a bounded budget per PR; a long run happens nightly (SPEC §7.6).
+# CI runs a bounded budget per PR; a long run happens nightly.
 
 [dependencies]
 libfuzzer-sys = "0.4"

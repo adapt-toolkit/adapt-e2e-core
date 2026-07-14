@@ -1,4 +1,4 @@
-//! Stable C-ABI return codes (SPEC §4.5) and the internal management error type.
+//! Stable C-ABI return codes and the internal management error type.
 
 /// Stable C-ABI return code. **These values are frozen and MUST never be
 /// renumbered** — they are part of the committed ABI (`enum e2e_rc`).

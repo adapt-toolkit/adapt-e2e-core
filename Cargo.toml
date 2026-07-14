@@ -14,14 +14,14 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 [features]
 default = ["std"]
 # `std` is feature-gated and default-on for native convenience only. The
-# `no_std` build (`--no-default-features`) is a first-class CI target (SPEC §9);
-# note the vendored vodozemac fork is not yet `no_std` (tracked for milestone M4).
+# `no_std` build (`--no-default-features`) is a first-class CI target; the
+# vendored vodozemac fork is `no_std` + `alloc` on this path.
 std = []
 # Regenerate the committed C header via cbindgen (host tooling only).
 generate-header = ["dep:cbindgen"]
 
 [build-dependencies]
-# Generates the committed C header from the extern "C" surface (SPEC §1, §2).
+# Generates the committed C header from the extern "C" surface.
 # Opt-in via the `generate-header` feature so normal / no_std / rv32 builds do
 # not pull cbindgen (its proc-macro deps conflict with `-Zbuild-std`). The header
 # is committed; regenerate with `cargo build --features generate-header`.
@@ -34,7 +34,7 @@ cbindgen = { version = "0.29", default-features = false, optional = true }
 #
 # `default-features = false` drops the OS-RNG `std-rng` feature so the SHIPPED
 # library links no `rand`/`getrandom`/`OsRng` — the adapt path uses only the
-# injected-entropy `*_with_rng` API (SPEC §7.7 / §9). Tests re-enable `std-rng`
+# injected-entropy `*_with_rng` API. Tests re-enable `std-rng`
 # via the dev-dependency below (they use the default OsRng peer helpers).
 vodozemac = { path = "vendor/vodozemac", default-features = false }
 # Trait glue for the injected CSPRNG. rand_core 0.10 is the version vodozemac's
@@ -53,10 +53,10 @@ vodozemac = { path = "vendor/vodozemac", features = ["std-rng"] }
 # A second, independent seeded CSPRNG for cross-checking determinism in tests.
 rand = { version = "0.10", default-features = false, features = ["std_rng"] }
 # The REAL upstream vodozemac from crates.io, as an independent interop oracle
-# (SPEC §7.2): our seed-injected fork must be wire-compatible with it. Renamed to
+#: our seed-injected fork must be wire-compatible with it. Renamed to
 # avoid colliding with the vendored `vodozemac` path dependency.
 vodozemac_upstream = { package = "vodozemac", version = "0.10.0" }
-# Property-based fuzzing of the C-ABI boundary (SPEC §7.6): malformed input must
+# Property-based fuzzing of the C-ABI boundary: malformed input must
 # never panic, always a clean error.
 proptest = "1"
 

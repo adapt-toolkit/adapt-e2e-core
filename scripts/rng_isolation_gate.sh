@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# RNG-isolation gate (SPEC §7.7).
+# RNG-isolation gate.
 #
 # The adapt path must be a pure function of its injected seed: the shipped
 # library MUST NOT link the `getrandom` crate, `OsRng`, `thread_rng`, or the

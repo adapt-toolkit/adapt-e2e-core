@@ -1,4 +1,4 @@
-# Packaging & build targets (SPEC §6.2)
+# Packaging & build targets
 
 The crate builds a `staticlib` + `cdylib` + `rlib`. The consumer links
 `libadapt_e2e_core.a` exactly where it links `libsodium`. Per target:
@@ -30,4 +30,4 @@ The crate builds a `staticlib` + `cdylib` + `rlib`. The consumer links
 
 Two vendored, security-backport-only forks: `vendor/vodozemac` (the `*_with_rng`
 seam + no_std/getrandom-severance delta) and `vendor/base64` (unconditional
-`core::error::Error` for no_std). Both critic-verified behaviour-preserving.
+`core::error::Error` for no_std). Both verified behaviour-preserving.
