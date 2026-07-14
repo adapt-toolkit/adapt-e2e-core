@@ -180,9 +180,16 @@ fn tampered_pickle_body_is_rejected_by_the_pickle_mac() {
 #[test]
 fn flipped_envelope_kind_does_not_type_confuse() {
     // The outer envelope's `kind` byte (offset 7: 1=acct, 2=sess) is plaintext,
-    // NOT AEAD-authenticated. But flipping it cannot cause acct↔sess type
-    // confusion: either the envelope kind-check rejects it, or the inner pickle
-    // deserialization (wrong serde shape) fails — never a usable wrong-type object.
+    // NOT AEAD-authenticated. Flipping it to the *valid* other value cannot cause
+    // acct↔sess type confusion — this is DEFENCE IN DEPTH:
+    //   (a) the envelope kind-check rejects a mismatched kind (pinned in isolation
+    //       by `mgmt::pickle::rejects_wrong_kind` — delete that check and THAT unit
+    //       test fails), AND
+    //   (b) even past (a), the inner vodozemac pickle deserialization rejects the
+    //       wrong serde shape.
+    // This test exercises path (b) — it flips kind to the valid opposite so the
+    // envelope check passes and inner deser is the guard — for BOTH directions,
+    // proving no usable wrong-type object is ever produced.
     let a = acct(1);
     let mut a_as_sess = a.clone();
     a_as_sess[7] = 2; // claim Session

@@ -157,12 +157,18 @@ proptest! {
         prop_assert_ne!(rc, -99);
     }
 
-    /// ★ Envelope type-confusion (review §4/§6): a REAL account pickle with one
-    /// envelope metadata byte (fmt_ver/engine_ver/kind, offsets 4..8) corrupted,
-    /// fed to a SESSION entry point, must never panic and never load as a session
-    /// — the plaintext (non-AEAD) outer metadata cannot cause acct↔sess confusion.
+    /// Robustness fuzz: a REAL account pickle with ANY single envelope-metadata
+    /// byte (fmt_ver / engine_ver / kind, offsets 4..8) corrupted must ALWAYS be
+    /// cleanly rejected when fed to a session entry point — never a panic (-99),
+    /// never a false load (rc == 0). NOTE this is a ROBUSTNESS envelope, not the
+    /// type-confusion proof: most random corruptions trip the version/kind check,
+    /// so only a tiny fraction actually reach inner deserialization. The
+    /// deterministic acct↔sess type-confusion (kind flipped to the *valid* other
+    /// value, so inner deser is the guard) is covered exhaustively AND both
+    /// directions in `tests/boundary_invariants.rs::flipped_envelope_kind_*`; the
+    /// kind byte's own enforcement is pinned by `mgmt::pickle::rejects_wrong_kind`.
     #[test]
-    fn corrupted_envelope_meta_never_type_confuses(seed in any::<[u8; 32]>(), pos in 4usize..8, xor in 1u8..=255) {
+    fn corrupted_envelope_meta_is_cleanly_rejected(seed in any::<[u8; 32]>(), pos in 4usize..8, xor in 1u8..=255) {
         let mut acct = vec![0u8; 16384];
         let mut al = acct.len();
         let rc = unsafe { e2e_account_create(seed.as_ptr(), PK.as_ptr(), acct.as_mut_ptr(), &mut al) };
