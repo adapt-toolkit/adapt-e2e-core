@@ -10,10 +10,15 @@
 //!   Because the engine is deterministic, re-running the operation to size then
 //!   fill buffers is a safe replay (SPEC §5.3), not a key-reusing rewind.
 //! * **Seed** is a `const uint8_t seed[32]` present only on keygen-bearing calls.
+//!   The crate's internal copy of the seed is held in [`Zeroizing`] and wiped when
+//!   the call returns, so no seed material lingers on the crate's stack (the
+//!   `SeededRng` expansion copy is likewise zeroized). The caller still owns and
+//!   must wipe its OWN seed buffer.
 //! * Every call returns `int32_t rc` ([`E2eRc`]); no panic crosses the boundary.
 
 use crate::mgmt::error::{E2eRc, Error, Result};
 use crate::mgmt::{account, session};
+use zeroize::Zeroizing;
 
 // ---- input helpers -------------------------------------------------------
 
@@ -119,7 +124,7 @@ pub unsafe extern "C" fn e2e_account_create(
     out_pickle_len: *mut usize,
 ) -> i32 {
     guard(|| {
-        let seed = unsafe { in_arr32(seed) }?;
+        let seed = Zeroizing::new(unsafe { in_arr32(seed) }?);
         let pk = unsafe { in_arr32(pickle_key) }?;
         let blob = account::create(&seed, &pk)?;
         let s = unsafe { write_out(&blob, out_pickle, out_pickle_len) }?;
@@ -143,7 +148,7 @@ pub unsafe extern "C" fn e2e_account_gen_otks(
 ) -> i32 {
     guard(|| {
         let in_pickle = unsafe { in_slice(in_pickle, in_pickle_len) }?;
-        let seed = unsafe { in_arr32(seed) }?;
+        let seed = Zeroizing::new(unsafe { in_arr32(seed) }?);
         let pk = unsafe { in_arr32(pickle_key) }?;
         let blob = account::gen_otks(in_pickle, n, &seed, &pk)?;
         let s = unsafe { write_out(&blob, out_pickle, out_pickle_len) }?;
@@ -166,7 +171,7 @@ pub unsafe extern "C" fn e2e_account_gen_fallback(
 ) -> i32 {
     guard(|| {
         let in_pickle = unsafe { in_slice(in_pickle, in_pickle_len) }?;
-        let seed = unsafe { in_arr32(seed) }?;
+        let seed = Zeroizing::new(unsafe { in_arr32(seed) }?);
         let pk = unsafe { in_arr32(pickle_key) }?;
         let blob = account::gen_fallback(in_pickle, &seed, &pk)?;
         let s = unsafe { write_out(&blob, out_pickle, out_pickle_len) }?;
@@ -217,7 +222,7 @@ pub unsafe extern "C" fn e2e_session_outbound(
         let in_pickle = unsafe { in_slice(in_pickle, in_pickle_len) }?;
         let ik = unsafe { in_arr32(ik_b) }?;
         let otk = unsafe { in_arr32(otk_b) }?;
-        let seed = unsafe { in_arr32(seed) }?;
+        let seed = Zeroizing::new(unsafe { in_arr32(seed) }?);
         let pk = unsafe { in_arr32(pickle_key) }?;
         let (sess, acct) = session::outbound(in_pickle, &ik, &otk, &seed, &pk)?;
         let s1 = unsafe { write_out(&sess, out_session, out_session_len) }?;
@@ -283,7 +288,7 @@ pub unsafe extern "C" fn e2e_encrypt(
     guard(|| {
         let in_session = unsafe { in_slice(in_session, in_session_len) }?;
         let pt = unsafe { in_slice(pt, pt_len) }?;
-        let seed = unsafe { in_arr32(seed) }?;
+        let seed = Zeroizing::new(unsafe { in_arr32(seed) }?);
         let pk = unsafe { in_arr32(pickle_key) }?;
         let r = session::encrypt(in_session, pt, &seed, &pk)?;
         if out_msg_type.is_null() {
