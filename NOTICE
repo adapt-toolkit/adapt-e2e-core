@@ -1,0 +1,38 @@
+adapt-e2e-core
+Copyright 2026 adapt-toolkit
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+It vendors and modifies third-party software, attributed below in accordance
+with Apache License 2.0 section 4.
+
+==============================================================================
+vodozemac
+  Copyright 2021-2024 The Matrix.org Foundation C.I.C.
+  Licensed under the Apache License, Version 2.0.
+  Source: https://github.com/matrix-org/vodozemac
+
+  adapt-e2e-core vendors a pinned fork of vodozemac 0.10.0 under
+  `vendor/vodozemac/`. Modifications by adapt-toolkit (full ledger in PATCH.md):
+    - an additive `*_with_rng` entropy-injection API that threads a
+      caller-supplied CSPRNG through the Olm key-generation paths (proposed
+      upstream as matrix-org/vodozemac#379);
+    - feature-gating of the OS-RNG default methods and the non-Olm engines behind
+      `std-rng`, so the default build links no `getrandom`/`OsRng`;
+    - `#![no_std]` + `alloc` support for bare-metal targets.
+  The original audited code paths are unchanged.
+
+==============================================================================
+base64
+  Copyright Marshall Pierce and the base64 authors.
+  Dual-licensed under MIT OR Apache-2.0; used here under Apache-2.0
+  (see `vendor/base64/LICENSE-APACHE`).
+  Source: https://github.com/marshallpierce/rust-base64
+
+  adapt-e2e-core vendors a pinned fork of base64 0.22.1 under `vendor/base64/`,
+  applied via `[patch.crates-io]`. The sole modification makes the crate's
+  `Error` impls unconditional `core::error::Error` (behaviour-preserving; see
+  PATCH.md).
+
+==============================================================================
+Other vendored dependencies retain their own license and notice files under
+`vendor/`.
