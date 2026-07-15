@@ -6,6 +6,7 @@ version = 4
 name = "adapt-e2e-core"
 version = "0.0.0"
 dependencies = [
+ "bytes",
  "cbindgen",
  "proptest",
  "rand 0.10.2",
@@ -157,6 +158,9 @@ name = "bytes"
 version = "1.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
+dependencies = [
+ "portable-atomic",
+]
 
 [[package]]
 name = "cbc"
@@ -793,6 +797,12 @@ dependencies = [
  "cpufeatures 0.3.0",
  "universal-hash 0.6.1",
 ]
+
+[[package]]
+name = "portable-atomic"
+version = "1.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c33a9471896f1c69cecef8d20cbe2f7accd12527ce60845ff44c153bb2a21b49"
 
 [[package]]
 name = "ppv-lite86"

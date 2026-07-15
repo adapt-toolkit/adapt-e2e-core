@@ -11,23 +11,26 @@
 //! for the plain `rlib` compile gate (`scripts/rv32_baremetal_build.sh`, whose
 //! downstream binary would provide its own).
 //!
-//! ── ARCHITECTURE CAVEAT (imac vs rv32im) ──────────────────────────────────
-//! This staticlib is built for `riscv32imac-unknown-none-elf` (the **A**tomic
-//! extension), NOT bare `rv32im`. That is deliberate and load-bearing: a
-//! transitive dependency (`bytes` ← `prost` ← vodozemac, the protobuf message
-//! codec) uses `core::sync::atomic` compare-and-swap directly, which does not
-//! exist on an `atomic-cas: false` target such as `riscv32im-unknown-none-elf`,
-//! and cannot be redirected by a `portable-atomic` shim (that only helps crates
-//! that opt into `portable_atomic`, which `bytes` does not). Building for `imac`
-//! gives real atomics and lets the whole dependency graph compile.
+//! ── TARGET: true rv32im (no atomics) ──────────────────────────────────────
+//! This staticlib is built for `riscv32im-unknown-none-elf` — a GENUINE
+//! no-atomics target (`atomic-cas: false`), matching ADAPT's `-march=rv32im`
+//! ELF exactly and running on real rv32im silicon / the risc0 zkVM, not just
+//! qemu. A transitive dependency (`bytes` ← `prost` ← vodozemac, the protobuf
+//! codec) needs compare-and-swap, which the bare ISA lacks. Rather than fork
+//! `bytes`, we enable its upstream `extra-platforms` feature (see the crate
+//! Cargo.toml `baremetal-rt` feature), which routes bytes' atomics through
+//! `portable-atomic`. On a single-hart, non-preemptive target the missing CAS
+//! is supplied by `portable-atomic`'s single-core path, opted into with the
+//! build flag `--cfg portable_atomic_unsafe_assume_single_core`.
 //!
-//! The resulting archive is linked into ADAPT's `rv32im` (`-march=rv32im`)
-//! newlib ELF. Under **qemu-riscv32 user-mode** (the CI simulator) the A-extension
-//! instructions execute fine — qemu emulates the full ISA. On **real A-less
-//! rv32im silicon or the risc0 zkVM** those instructions would trap. Enabling
-//! e2e on a genuinely atomic-free rv32im target is a separate, larger effort
-//! (forking `bytes`/`prost` off core atomics); this file's approach is scoped to
-//! "e2e green on the rv32:func CI leg (qemu)", which is the current requirement.
+//! SOUNDNESS of the single-core cfg: `portable-atomic` emulates CAS by briefly
+//! disabling interrupts around the read-modify-write. That is correct iff the
+//! target is a single hardware thread with no other agent performing atomics
+//! concurrently — which holds here: the rv32 bare-metal eval runs single-hart
+//! with no preemptive scheduler and no second core, and e2e is called
+//! synchronously from the single eval thread. See PATCH.md for the ledgered
+//! rationale. (The verified build emits no `__atomic_*` libcalls — the CAS is
+//! inlined, so no libatomic is required.)
 
 use core::alloc::{GlobalAlloc, Layout};
 

@@ -22,8 +22,11 @@ std = []
 # linkable C-ABI `staticlib` (an rlib inherits both from its final binary; a
 # staticlib is the final artifact and must carry them). Enable ONLY for the rv32
 # staticlib build (`--no-default-features --features baremetal-rt`); it is
-# mutually exclusive with `std`. See src/baremetal_rt.rs for the imac caveat.
-baremetal-rt = []
+# mutually exclusive with `std`. Enables bytes' upstream `extra-platforms`
+# feature so the transitive bytes (<- prost <- vodozemac) routes its atomics
+# through portable-atomic and builds on a true no-atomics riscv32im target; CAS
+# is provided by the `--cfg portable_atomic_unsafe_assume_single_core` build flag.
+baremetal-rt = ["dep:bytes", "bytes/extra-platforms"]
 # Regenerate the committed C header via cbindgen (host tooling only).
 generate-header = ["dep:cbindgen"]
 
@@ -51,6 +54,16 @@ rand_core = { version = "0.10", default-features = false }
 rand_chacha = { version = "0.10", default-features = false }
 # Non-elidable secret wiping on drop.
 zeroize = { version = "1", default-features = false }
+# Pulled ONLY for the bare-metal staticlib build (via the `baremetal-rt`
+# feature). We do not use bytes directly — it arrives transitively (bytes <-
+# prost <- vodozemac, the protobuf codec). Enabling its upstream `extra-platforms`
+# feature (see the feature list) routes bytes' atomics through `portable-atomic`
+# instead of `core::sync::atomic`, so it builds on a TRUE no-atomics rv32im
+# target (riscv32im-unknown-none-elf, atomic-cas:false) — no vendored fork, no
+# imac/qemu-atomics crutch. CAS on the single hart is supplied by the
+# `--cfg portable_atomic_unsafe_assume_single_core` build flag (see PATCH.md /
+# baremetal/build-adapt-e2e-core-rv32.sh for the soundness argument).
+bytes = { version = "1.12", default-features = false, optional = true }
 
 [dev-dependencies]
 # Re-enable vodozemac's OS-RNG default methods for tests only (the shipped lib

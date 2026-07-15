@@ -33,7 +33,8 @@ extern crate alloc;
 #[cfg(all(feature = "std", feature = "baremetal-rt"))]
 compile_error!("`baremetal-rt` is the no_std staticlib runtime and cannot be combined with `std`");
 
-// Only for the rv32 no_std staticlib build; see the module for the imac caveat.
+// Only for the rv32 no_std staticlib build; see the module for the bare-metal
+// runtime (newlib allocator + abort panic handler) and rv32im atomics notes.
 #[cfg(feature = "baremetal-rt")]
 mod baremetal_rt;
 

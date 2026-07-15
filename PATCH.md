@@ -33,6 +33,19 @@ Every change to `vendor/` MUST be recorded here.
 The Least-Authority audit (2022) predates 0.10.0 by years; it covers neither
 0.10.0's own drift nor our delta. This ledger scopes *our* delta only.
 
+## Bare-metal atomics — `bytes` `extra-platforms` + single-core CAS cfg (NO fork)
+
+| Field | Value |
+|---|---|
+| Crate | `bytes` (transitive: `bytes` ← `prost` ← vodozemac protobuf codec) |
+| Fork? | **None.** `bytes` is used UNMODIFIED from crates.io. |
+| What we enable | `bytes`'s own upstream `extra-platforms` feature (turned on by our `baremetal-rt` crate feature: `bytes/extra-platforms`). It routes bytes' atomics through `portable-atomic` instead of `core::sync::atomic`. |
+| Why | The true no-atomics target `riscv32im-unknown-none-elf` is `atomic-cas: false`; `bytes` needs compare-and-swap for its `Bytes` refcount, so it will not compile there against `core::sync::atomic`. Enabling `extra-platforms` lets `portable-atomic` supply CAS — no vendored fork of `bytes`/`prost`. |
+| Build cfg | `--cfg portable_atomic_unsafe_assume_single_core` (set in `scripts/rv32_baremetal_build.sh` and ADAPT's `baremetal/build-adapt-e2e-core-rv32.sh`). Selects portable-atomic's single-core CAS: emulate RMW by briefly disabling interrupts. |
+| Soundness (the `unsafe` cfg) | Correct **iff** a single hardware thread with no concurrent atomic agent. Holds here: the rv32 bare-metal eval is single-hart, non-preemptive (no scheduler, no second core), and e2e is invoked synchronously from the one eval thread. No interrupt handler touches these atomics. Verified: the built staticlib emits **no `__atomic_*` libcalls** (CAS is inlined, no libatomic dependency). |
+| Scope | Applies ONLY to the `baremetal-rt` (rv32 staticlib) build. Native/wasm builds do not enable `extra-platforms` and use native atomics. |
+| Re-audit | On a `bytes`/`portable-atomic` version bump: re-confirm the built rv32im staticlib still has zero `__atomic_*` undefined symbols and that the single-core precondition (single-hart/non-preemptive) still holds for the deployment target. |
+
 ## Delta 1 — additive `*_with_rng` entropy-injection seam (UPSTREAMABLE)
 
 **Status:** submitted upstream as PR #379 (open). If merged, switch the crate's
@@ -88,9 +101,11 @@ guarantee. They are NOT part of PR #379 (upstream keeps OsRng-by-default).
   (`matrix_pickle`, which needs `std::io`) gated behind `libolm-compat`;
   `mod dehydrated_device` gated behind `std-rng`; and the runtime `HashMap` moved
   to `hashbrown` / `alloc::BTreeMap`. The base64 `core::error::Error` requirement
-  is met by the 2nd pinned fork above. The crate then builds as a `no_std` rlib
-  for `riscv32imac-unknown-none-elf` (nightly `-Zbuild-std=core,alloc`) —
-  bare-metal, no OS, no getrandom (see `scripts/rv32_baremetal_build.sh`). The
+  is met by the 2nd pinned fork above. The crate then builds as a `no_std`
+  staticlib for the true no-atomics `riscv32im-unknown-none-elf` (nightly
+  `-Zbuild-std=core,alloc`, `baremetal-rt` feature, single-core CAS cfg — see the
+  "Bare-metal atomics" ledger above) — bare-metal, no OS, no getrandom (see
+  `scripts/rv32_baremetal_build.sh`). The
   `wasm32-unknown-emscripten` lane is not built here (it must be ABI-pinned to the
   consumer's emsdk/emcc); the no_std-clean crate builds consumer-side once emsdk
   is available.
