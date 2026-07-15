@@ -17,6 +17,13 @@ default = ["std"]
 # `no_std` build (`--no-default-features`) is a first-class CI target; the
 # vendored vodozemac fork is `no_std` + `alloc` on this path.
 std = []
+# Bare-metal staticlib runtime: supplies a newlib-backed `#[global_allocator]`
+# and an abort `#[panic_handler]` so the `no_std` build can be emitted as a
+# linkable C-ABI `staticlib` (an rlib inherits both from its final binary; a
+# staticlib is the final artifact and must carry them). Enable ONLY for the rv32
+# staticlib build (`--no-default-features --features baremetal-rt`); it is
+# mutually exclusive with `std`. See src/baremetal_rt.rs for the imac caveat.
+baremetal-rt = []
 # Regenerate the committed C header via cbindgen (host tooling only).
 generate-header = ["dep:cbindgen"]
 

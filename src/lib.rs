@@ -28,6 +28,15 @@
 
 extern crate alloc;
 
+// The bare-metal staticlib runtime (newlib allocator + abort panic handler) is
+// mutually exclusive with std, which provides its own.
+#[cfg(all(feature = "std", feature = "baremetal-rt"))]
+compile_error!("`baremetal-rt` is the no_std staticlib runtime and cannot be combined with `std`");
+
+// Only for the rv32 no_std staticlib build; see the module for the imac caveat.
+#[cfg(feature = "baremetal-rt")]
+mod baremetal_rt;
+
 pub mod ffi;
 pub mod mgmt;
 pub mod seeded_rng;
