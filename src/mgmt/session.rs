@@ -233,6 +233,51 @@ mod tests {
         );
     }
 
+    // Born-DR pre-key phase: until the recipient replies, EVERY message the sender
+    // sends still carries the pre-key preamble (msg_type == 0). The 2nd, 3rd, ...
+    // such message must DECRYPT ON THE EXISTING inbound session (advancing its
+    // ratchet), and a genuine already-consumed index must be rejected as a replay.
+    // Proves the crate primitive `decrypt(existing, 0, msg)` is index-aware — the
+    // premise of the e2e.mm born-DR 2nd-message fix (no crate change needed).
+    #[test]
+    fn prekey_phase_decrypts_on_existing_session_and_rejects_true_replay() {
+        let (alice, bob, otk) = parties();
+        let ik_b = ik_of(&bob);
+        let ik_a = ik_of(&alice);
+
+        // Alice sends three messages before Bob replies → all pre-key (type 0).
+        let (a0, _) = outbound(&alice, &ik_b, &otk, &[4u8; 32], &PK).unwrap();
+        let e1 = encrypt(&a0, b"msg1", &[10u8; 32], &PK).unwrap();
+        let e2 = encrypt(&e1.session, b"msg2", &[11u8; 32], &PK).unwrap();
+        let e3 = encrypt(&e2.session, b"msg3", &[12u8; 32], &PK).unwrap();
+        assert_eq!(e1.msg_type, MessageType::PreKey as u32);
+        assert_eq!(
+            e2.msg_type,
+            MessageType::PreKey as u32,
+            "2nd message is still a pre-key until the peer replies"
+        );
+        assert_eq!(e3.msg_type, MessageType::PreKey as u32);
+
+        // Bob: msg1 establishes the inbound session and decrypts.
+        let inb = inbound(&bob, &ik_a, &e1.message, &PK).unwrap();
+        assert_eq!(inb.plaintext, b"msg1");
+
+        // msg2 / msg3: decrypt ON THE EXISTING session (the fix premise).
+        let (pt2, bob_s2) =
+            decrypt(&inb.session, MessageType::PreKey as u32, &e2.message, &PK).unwrap();
+        assert_eq!(pt2, b"msg2", "2nd pre-key must decrypt on the existing session");
+        let (pt3, bob_s3) =
+            decrypt(&bob_s2, MessageType::PreKey as u32, &e3.message, &PK).unwrap();
+        assert_eq!(pt3, b"msg3");
+
+        // A true replay (already-consumed index) must be rejected — no double-deliver.
+        let replay = decrypt(&bob_s3, MessageType::PreKey as u32, &e2.message, &PK);
+        assert!(
+            replay.is_err(),
+            "re-decrypting an already-consumed index must be rejected as a replay"
+        );
+    }
+
     #[test]
     fn reply_direction_and_session_id_agree() {
         let (alice, bob, otk) = parties();
